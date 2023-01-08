@@ -567,6 +567,17 @@ files = [
 ]
 
 [[package]]
+name = "pysdl2"
+version = "0.9.15"
+description = "Python SDL2 bindings"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "PySDL2-0.9.15.tar.gz", hash = "sha256:908a7de3a88c2b22a2c21a69917c532152895bd1a490527a270ee14cad40e647"},
+]
+
+[[package]]
 name = "pytest"
 version = "7.2.1"
 description = "pytest: simple powerful testing with Python"
@@ -734,4 +745,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8.1"
-content-hash = "d2bfd2152d61806b10f6620bc446b9ca9725351fff0c0e630fd2c7ab80a0651a"
+content-hash = "3c96d33638b1291e5b13092f082554b9801176955a3a018723b3261d72255f05"

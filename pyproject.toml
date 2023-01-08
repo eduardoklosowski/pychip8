@@ -40,6 +40,9 @@ pytest = "^7.2"
 pytest-cov = "^4.0"
 pytest-xdist = "^3.1"
 
+[tool.poetry.scripts]
+pychip8 = 'pychip8.cli:main'
+
 [tool.isort]
 float_to_top = true
 multi_line_output = "VERTICAL_GRID"

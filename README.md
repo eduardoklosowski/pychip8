@@ -2,6 +2,14 @@
 
 Chip-8 emulator written in Python
 
+## Example of use
+
+```sh
+pychip8 path/to/rom.ch8
+
+pychip8 --sdl path/to/rom.ch8
+```
+
 ## Links about Chip-8
 
 - https://en.wikipedia.org/wiki/CHIP-8

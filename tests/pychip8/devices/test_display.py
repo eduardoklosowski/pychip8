@@ -1,7 +1,8 @@
+from math import ceil
 from random import choice, randint
 from unittest.mock import MagicMock
 
-from pychip8.devices.display import Display
+from pychip8.devices.display import AddressableDisplay, Display
 
 
 class TestDisplay:
@@ -287,3 +288,69 @@ class TestDisplay:
             for y in range(height):
                 for x in range(width):
                     assert sut.get_pixel(x, y) is ((x, y) in pixels)
+
+
+class TestAddressableDisplay:
+    def test_repr(self) -> None:
+        for _ in range(10):
+            display = MagicMock()
+
+            sut = AddressableDisplay(display)
+
+            assert repr(sut) == f'AddressableDisplay({display!r})'
+
+    def test_length(self) -> None:
+        for _ in range(10):
+            width = randint(1, 32)
+            height = randint(1, 16)
+
+            for i in range(9):
+                display = MagicMock()
+                display.width = width + i
+                display.height = height
+                sut = AddressableDisplay(display)
+                assert len(sut) == ceil((width + i) * height / 8)
+
+                display = MagicMock()
+                display.width = width
+                display.height = height + i
+                sut = AddressableDisplay(display)
+                assert len(sut) == ceil(width * (height + i) / 8)
+
+    def test_read_address(self) -> None:
+        for _ in range(10):
+            width = randint(2, 32)
+            height = randint(4, 16)
+            value = randint(0, 255)
+            address = randint(0, ceil(width * height / 8))
+
+            display = Display(width=width, height=height)
+            for i, pixel_number in enumerate(range(address * 8, (address + 1) * 8)):
+                pixel = bool(value >> (7 - i) & 1)
+                x = pixel_number % width
+                y = pixel_number // width
+                display.set_pixel(x, y, pixel)
+            sut = AddressableDisplay(display)
+
+            assert sut[address] == value
+
+    def test_write_address(self) -> None:
+        for _ in range(10):
+            width = randint(2, 32)
+            height = randint(4, 16)
+            value = randint(0, 255)
+            address = randint(0, ceil(width * height / 8))
+            pixels = {
+                (pixel_number % width, pixel_number // width % height)
+                for i, pixel_number in enumerate(range(address * 8, (address + 1) * 8))
+                if bool(value >> (7 - i) & 1)
+            }
+
+            display = Display(width=width, height=height)
+            sut = AddressableDisplay(display)
+
+            sut[address] = value
+
+            for y in range(height):
+                for x in range(width):
+                    assert display.get_pixel(x, y) is ((x, y) in pixels)

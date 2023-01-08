@@ -1,4 +1,5 @@
-from typing import Callable, List, Optional
+from math import ceil
+from typing import Callable, List, Optional, Tuple
 
 
 class Display:
@@ -71,3 +72,27 @@ class Display:
 
     def set_update_pixel_callback(self, callback: Optional[Callable[[int, int, bool], None]], /) -> None:
         self._update_pixel_callback = callback
+
+
+class AddressableDisplay:
+    def __init__(self, display: Display, /) -> None:
+        self._display = display
+
+    def __repr__(self) -> str:
+        return f'AddressableDisplay({self._display!r})'
+
+    def __len__(self) -> int:
+        return ceil(self._display.width * self._display.height / 8)
+
+    def _calc_pixel_position(self, pixel_number: int, /) -> Tuple[int, int]:
+        return pixel_number % self._display.width, pixel_number // self._display.width
+
+    def __getitem__(self, address: int, /) -> int:
+        value = 0
+        for pixel_number in range(address * 8, (address + 1) * 8):
+            value = (value << 1) | self._display.get_pixel(*self._calc_pixel_position(pixel_number))
+        return value
+
+    def __setitem__(self, address: int, value: int, /) -> None:
+        for i, pixel_number in enumerate(range(address * 8, (address + 1) * 8)):
+            self._display.set_pixel(*self._calc_pixel_position(pixel_number), bool(value >> (7 - i) & 1))

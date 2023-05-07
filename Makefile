@@ -22,11 +22,14 @@ fmt-isort:
 
 # Lint
 
-.PHONY: lint lint-poetry lint-flake8 lint-mypy lint-bandit
-lint: lint-poetry lint-flake8 lint-mypy lint-bandit
+.PHONY: lint lint-poetry lint-isort lint-flake8 lint-mypy lint-bandit
+lint: lint-poetry lint-isort lint-flake8 lint-mypy lint-bandit
 
 lint-poetry:
 	poetry check
+
+lint-isort:
+	poetry run isort --check --diff $(srcdir) $(testsdir)
 
 lint-flake8:
 	poetry run flake8 --show-source $(srcdir) $(testsdir)

@@ -28,7 +28,7 @@ enable = true
 vcs = "git"
 
 [tool.poetry.dependencies]
-python = "^3.8.1"
+python = "^3.10"
 pysdl2 = "^0.9"
 
 [tool.poetry.group.lint.dependencies]

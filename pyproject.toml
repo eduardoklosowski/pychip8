@@ -1,5 +1,5 @@
 [build-system]
-requires = ["poetry-core", "poetry-dynamic-versioning"]
+requires = ["poetry-core>=1,<2", "poetry-dynamic-versioning>=1.4,<2"]
 build-backend = "poetry_dynamic_versioning.backend"
 
 [tool.poetry]
@@ -29,7 +29,7 @@ vcs = "git"
 
 [tool.poetry.dependencies]
 python = "^3.8.1"
-pysdl2 = "~0.9"
+pysdl2 = "^0.9"
 
 [tool.poetry.group.lint.dependencies]
 flake8 = "^6.0"
@@ -53,7 +53,7 @@ pytest-cov = "^4.0"
 pytest-xdist = "^3.1"
 
 [tool.poetry.scripts]
-pychip8 = 'pychip8.cli:main'
+pychip8 = "pychip8.cli:main"
 
 [tool.isort]
 float_to_top = true
@@ -73,13 +73,13 @@ strict = true
 
 [[tool.mypy.overrides]]
 module = [
-    "sdl2.*",
+  "sdl2.*",
 ]
 ignore_missing_imports = true
 
 [tool.bandit]
 exclude_dirs = [
-    "tests",
+  "tests",
 ]
 
 [tool.pytest.ini_options]

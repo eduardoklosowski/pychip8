@@ -1,9 +1,10 @@
 # Python
 *.py[cod]
 __pycache__
-/dist
 
 # Development tools
+/.venv
+/dist
 /.mypy_cache
 /.pytest_cache
 /.coverage

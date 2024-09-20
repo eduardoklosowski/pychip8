@@ -10,6 +10,18 @@ authors = ["Eduardo Klosowski <eduardo_klosowski@yahoo.com>"]
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/eduardoklosowski/pychip8"
+classifiers = [
+  "Development Status :: 1 - Planning",
+  "Environment :: Console :: Curses",
+  "Environment :: X11 Applications",
+  "Intended Audience :: End Users/Desktop",
+  "Operating System :: OS Independent",
+  "Topic :: Games/Entertainment",
+  "Topic :: Software Development :: Interpreters",
+  "Topic :: System :: Emulators",
+  "Typing :: Typed",
+  "Private :: Do Not Upload",
+]
 
 [tool.poetry-dynamic-versioning]
 enable = true

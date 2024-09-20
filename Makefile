@@ -57,7 +57,7 @@ lint-bandit:
 test: test-pytest
 
 test-pytest:
-	poetry run pytest --numprocesses=auto --cov=pychip8 --cov-report=term-missing --no-cov-on-fail $(testsdir)
+	poetry run pytest --cov=pychip8 --cov-report=term-missing --no-cov-on-fail $(testsdir)
 
 
 # Clean

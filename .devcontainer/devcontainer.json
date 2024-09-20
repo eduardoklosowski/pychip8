@@ -31,7 +31,7 @@
         "mypy.targets": ["src", "tests"],
         "python.linting.banditEnabled": true,
         "python.testing.pytestEnabled": true,
-        "python.testing.pytestArgs": ["tests"]
+        "python.testing.pytestArgs": ["-vv", "tests"]
       }
     }
   }

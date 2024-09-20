@@ -48,9 +48,8 @@ mypy = "^1.11"
 bandit = "^1.7"
 
 [tool.poetry.group.test.dependencies]
-pytest = "^7.2"
-pytest-cov = "^4.0"
-pytest-xdist = "^3.1"
+pytest = "^8.3"
+pytest-cov = "^5.0"
 
 [tool.poetry.scripts]
 pychip8 = "pychip8.cli:main"
@@ -84,9 +83,7 @@ exclude_dirs = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = [
-  "tests",
-]
+testpaths = ["tests"]
 
 [tool.coverage.run]
 branch = true

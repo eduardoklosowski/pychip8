@@ -7,6 +7,7 @@ testsdir = tests
 # Build
 
 .PHONY: build
+
 build:
 	poetry build
 
@@ -14,26 +15,27 @@ build:
 # Init
 
 .PHONY: init
+
 init:
 	poetry install --sync
 
 
-# Formatter
+# Format
 
-.PHONY: fmt fmt-isort
-fmt: fmt-isort
+.PHONY: fmt
 
-fmt-isort:
+fmt:
 	poetry run isort --only-modified $(srcdir) $(testsdir)
 
 
 # Lint
 
 .PHONY: lint lint-poetry lint-isort lint-flake8 lint-mypy lint-bandit
+
 lint: lint-poetry lint-isort lint-flake8 lint-mypy lint-bandit
 
 lint-poetry:
-	poetry check
+	poetry check --lock
 
 lint-isort:
 	poetry run isort --check --diff $(srcdir) $(testsdir)
@@ -51,16 +53,28 @@ lint-bandit:
 # Tests
 
 .PHONY: test test-pytest
+
 test: test-pytest
 
 test-pytest:
-	poetry run pytest --numprocesses=auto $(testsdir)
+	poetry run pytest --numprocesses=auto --cov=pychip8 --cov-report=term-missing --no-cov-on-fail $(testsdir)
 
 
 # Clean
 
-.PHONY: clean
-clean:
+.PHONY: clean clean-build clean-pycache clean-python-tools dist-clean
+
+clean: clean-build clean-pycache clean-python-tools
+
+clean-build:
+	rm -rf dist
+
+clean-pycache:
 	find $(srcdir) $(testsdir) -name '__pycache__' -exec rm -rf {} +
 	find $(srcdir) $(testsdir) -type d -empty -delete
-	rm -rf dist .mypy_cache .pytest_cache .coverage
+
+clean-python-tools:
+	rm -rf dist .mypy_cache .pytest_cache .coverage .coverage.*
+
+dist-clean: clean
+	rm -rf .venv

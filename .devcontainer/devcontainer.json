@@ -29,7 +29,7 @@
         "python.linting.mypyEnabled": true,
         "python.linting.banditEnabled": true,
         "python.testing.pytestEnabled": true,
-        "python.testing.pytestArgs": ["--no-cov", "tests"]
+        "python.testing.pytestArgs": ["tests"]
       }
     }
   }

@@ -1,6 +1,6 @@
 # Project
 
-srcdir = pychip8
+srcdir = src
 testsdir = tests
 
 

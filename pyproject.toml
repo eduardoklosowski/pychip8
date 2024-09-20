@@ -60,7 +60,7 @@ float_to_top = true
 multi_line_output = "VERTICAL_GRID"
 line_length = 119
 src_paths = [
-  "pychip8",
+  "src",
   "tests",
 ]
 

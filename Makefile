@@ -11,6 +11,13 @@ build:
 	poetry build
 
 
+# Init
+
+.PHONY: init
+init:
+	poetry install --sync
+
+
 # Formatter
 
 .PHONY: fmt fmt-isort

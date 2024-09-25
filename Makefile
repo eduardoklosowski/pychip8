@@ -25,29 +25,27 @@ init:
 .PHONY: fmt
 
 fmt:
-	poetry run isort --only-modified $(srcdir) $(testsdir)
+	poetry run ruff check --select I001 --fix $(srcdir) $(testsdir)
+	poetry run ruff format $(srcdir) $(testsdir)
 
 
 # Lint
 
-.PHONY: lint lint-poetry lint-isort lint-flake8 lint-mypy lint-bandit
+.PHONY: lint lint-poetry lint-ruff-format lint-ruff-check lint-mypy
 
-lint: lint-poetry lint-isort lint-flake8 lint-mypy lint-bandit
+lint: lint-poetry lint-ruff-format lint-ruff-check lint-mypy
 
 lint-poetry:
 	poetry check --lock
 
-lint-isort:
-	poetry run isort --check --diff $(srcdir) $(testsdir)
+lint-ruff-format:
+	poetry run ruff format --diff $(srcdir) $(testsdir)
 
-lint-flake8:
-	poetry run flake8 --show-source $(srcdir) $(testsdir)
+lint-ruff-check:
+	poetry run ruff check $(srcdir) $(testsdir)
 
 lint-mypy:
 	poetry run mypy --show-error-context --pretty $(srcdir) $(testsdir)
-
-lint-bandit:
-	poetry run bandit --silent --recursive $(srcdir)
 
 
 # Tests
@@ -74,7 +72,7 @@ clean-pycache:
 	find $(srcdir) $(testsdir) -type d -empty -delete
 
 clean-python-tools:
-	rm -rf dist .mypy_cache .pytest_cache .coverage .coverage.*
+	rm -rf dist .ruff_cache .mypy_cache .pytest_cache .coverage .coverage.*
 
 dist-clean: clean
 	rm -rf .venv

@@ -1,4 +1,5 @@
-from typing import BinaryIO, Callable, List, Optional
+from collections.abc import Callable
+from typing import BinaryIO
 
 from .core import Chip8Core
 from .devices.devicebus import DeviceBus
@@ -15,7 +16,7 @@ class Chip8:
         bus.map(0x000, Rom(size=512))
         bus.map(0x200, Ram(size=3328))
         display = Display(width=64, height=32)
-        bus.map(0xf00, AddressableDisplay(display))
+        bus.map(0xF00, AddressableDisplay(display))
         keyboard = Keyboard()
         cores = [
             Chip8Core(
@@ -38,7 +39,7 @@ class Chip8:
     def __init__(
         self,
         *,
-        cores: List[Chip8Core],
+        cores: list[Chip8Core],
         bus: DeviceBus,
         display: Display,
         keyboard: Keyboard,
@@ -50,8 +51,8 @@ class Chip8:
         self._keyboard = keyboard
         self._instructions_per_update = instructions_per_update
         self._instructions_executable = 0
-        self._tick_callback: Optional[Callable[[], None]] = None
-        self._update_callback: Optional[Callable[[], None]] = None
+        self._tick_callback: Callable[[], None] | None = None
+        self._update_callback: Callable[[], None] | None = None
 
     def __repr__(self) -> str:
         return f'Chip8(cores={len(self)})'
@@ -62,10 +63,10 @@ class Chip8:
     def load_program(self, program: BinaryIO, /, *, load_at: int = 0x200) -> None:
         self._bus.load_program(program, load_at)
 
-    def set_tick_callback(self, callback: Optional[Callable[[], None]], /) -> None:
+    def set_tick_callback(self, callback: Callable[[], None] | None, /) -> None:
         self._tick_callback = callback
 
-    def set_update_callback(self, callback: Optional[Callable[[], None]], /) -> None:
+    def set_update_callback(self, callback: Callable[[], None] | None, /) -> None:
         self._update_callback = callback
 
     def tick(self) -> None:
@@ -78,3 +79,11 @@ class Chip8:
             self._instructions_executable = 0
             if self._update_callback:
                 self._update_callback()
+
+    @property
+    def display(self) -> Display:
+        return self._display
+
+    @property
+    def keyboard(self) -> Keyboard:
+        return self._keyboard

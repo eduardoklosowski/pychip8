@@ -1,5 +1,5 @@
+from collections.abc import Callable
 from math import ceil
-from typing import Callable, List, Optional, Tuple
 
 
 class Display:
@@ -7,20 +7,14 @@ class Display:
         self._width = width
         self._height = height
         self._frame = [[False for _ in range(width)] for _ in range(height)]
-        self._clear_callback: Optional[Callable[[], None]] = None
-        self._update_pixel_callback: Optional[Callable[[int, int, bool], None]] = None
+        self._clear_callback: Callable[[], None] | None = None
+        self._update_pixel_callback: Callable[[int, int, bool], None] | None = None
 
     def __repr__(self) -> str:
         return f'Display({self.width}x{self.height})'
 
     def __str__(self) -> str:
-        return '\n'.join(
-            ''.join(
-                '\u2588' if pixel else ' '
-                for pixel in line
-            )
-            for line in self._frame
-        )
+        return '\n'.join(''.join('\u2588' if pixel else ' ' for pixel in line) for line in self._frame)
 
     @property
     def width(self) -> int:
@@ -56,9 +50,9 @@ class Display:
         self._frame[y][x] = value
         if self._update_pixel_callback:
             self._update_pixel_callback(x, y, value)
-        return flipped  # noqa: R504
+        return flipped
 
-    def draw_sprite(self, x: int, y: int, sprite: List[int], /) -> bool:
+    def draw_sprite(self, x: int, y: int, sprite: list[int], /) -> bool:
         flipped = False
         for y2, line in enumerate(sprite):
             for x2 in range(8):
@@ -67,10 +61,10 @@ class Display:
                     flipped = True
         return flipped
 
-    def set_clear_callback(self, callback: Optional[Callable[[], None]], /) -> None:
+    def set_clear_callback(self, callback: Callable[[], None] | None, /) -> None:
         self._clear_callback = callback
 
-    def set_update_pixel_callback(self, callback: Optional[Callable[[int, int, bool], None]], /) -> None:
+    def set_update_pixel_callback(self, callback: Callable[[int, int, bool], None] | None, /) -> None:
         self._update_pixel_callback = callback
 
 
@@ -84,7 +78,7 @@ class AddressableDisplay:
     def __len__(self) -> int:
         return ceil(self._display.width * self._display.height / 8)
 
-    def _calc_pixel_position(self, pixel_number: int, /) -> Tuple[int, int]:
+    def _calc_pixel_position(self, pixel_number: int, /) -> tuple[int, int]:
         return pixel_number % self._display.width, pixel_number // self._display.width
 
     def __getitem__(self, address: int, /) -> int:

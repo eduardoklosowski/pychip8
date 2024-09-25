@@ -12,4 +12,4 @@ class Ram:
         return self._memory[address]
 
     def __setitem__(self, address: int, value: int, /) -> None:
-        self._memory[address] = value & 0xff
+        self._memory[address] = value & 0xFF

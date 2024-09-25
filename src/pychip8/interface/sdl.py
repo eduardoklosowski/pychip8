@@ -1,13 +1,15 @@
 import sys
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import BinaryIO, Final, Iterator, Tuple
+from pathlib import Path
+from typing import BinaryIO, Final
 
 import sdl2
 import sdl2.ext
 
-from ..clock import clock
-from ..cpu import Chip8
-from ..devices.keyboard import Key
+from pychip8.clock import clock
+from pychip8.cpu import Chip8
+from pychip8.devices.keyboard import Key
 
 
 @contextmanager
@@ -20,7 +22,7 @@ def sdl_environment() -> Iterator[None]:
 class Window:
     BLACK_PIXEL: Final = sdl2.ext.Color(0, 0, 0)
     WHITE_PIXEL: Final = sdl2.ext.Color(255, 255, 255)
-    KEYS = {
+    KEYS: Final = {
         sdl2.SDLK_1: Key.KEY1,
         sdl2.SDLK_2: Key.KEY2,
         sdl2.SDLK_3: Key.KEY3,
@@ -39,10 +41,10 @@ class Window:
         sdl2.SDLK_v: Key.KEYF,
     }
 
-    def __init__(self, *, cpu: Chip8, size: Tuple[int, int]) -> None:
+    def __init__(self, *, cpu: Chip8, size: tuple[int, int]) -> None:
         self._cpu = cpu
-        self._display = cpu._display
-        self._keyboard = cpu._keyboard
+        self._display = cpu.display
+        self._keyboard = cpu.keyboard
 
         self._window = sdl2.ext.Window('PyChip8', size=size)
         self._window.show()
@@ -86,11 +88,12 @@ class Window:
         while running:
             next(cpu_clock)
             for event in sdl2.ext.get_events():
-                if event.type == sdl2.SDL_QUIT or \
-                        (event.type == sdl2.SDL_KEYDOWN and event.key.keysym.sym == sdl2.SDLK_ESCAPE):
+                if event.type == sdl2.SDL_QUIT or (
+                    event.type == sdl2.SDL_KEYDOWN and event.key.keysym.sym == sdl2.SDLK_ESCAPE
+                ):
                     running = False
                     break
-                if event.type == sdl2.SDL_KEYDOWN or event.type == sdl2.SDL_KEYUP:
+                if event.type in (sdl2.SDL_KEYDOWN, sdl2.SDL_KEYUP):
                     key = self.KEYS.get(event.key.keysym.sym)
                     if key is not None:
                         self._keyboard[key] = event.type == sdl2.SDL_KEYDOWN
@@ -102,7 +105,7 @@ def main(
     program: BinaryIO,
     instructions_per_update: int = 16,
     clock: int = 960,
-    size: Tuple[int, int] = (800, 400),
+    size: tuple[int, int] = (800, 400),
 ) -> None:
     with sdl_environment():
         cpu = Chip8.new_cosmac_vip_with_4096_ram(instructions_per_update=instructions_per_update)
@@ -112,5 +115,5 @@ def main(
 
 
 if __name__ == '__main__':
-    with open(sys.argv[1], 'rb') as f:
+    with Path(sys.argv[1]).open('rb') as f:
         main(program=f)

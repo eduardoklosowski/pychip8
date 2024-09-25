@@ -1,7 +1,6 @@
 from asyncio import Future
 from dataclasses import dataclass
 from random import choice, randint
-from typing import List
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -14,10 +13,10 @@ from pychip8.devices.keyboard import Key
 @dataclass
 class MockBus:
     bus: DeviceBus
-    memory: List[int]
+    memory: list[int]
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_bus() -> MockBus:
     memory = [0 for _ in range(4096)]
 
@@ -63,13 +62,15 @@ class TestChip8Core:
                 instructions_per_update=instructions_per_update,
             )
 
-            with patch.object(sut, '_execute_instruction') as mock_execute_instruction:
-                with patch.object(sut, '_decrement_timer') as mock_decrement_time:
-                    for i in range(1, instructions_per_update * 3 + 1):
-                        sut.tick()
+            with (
+                patch.object(sut, '_execute_instruction') as mock_execute_instruction,
+                patch.object(sut, '_decrement_timer') as mock_decrement_time,
+            ):
+                for i in range(1, instructions_per_update * 3 + 1):
+                    sut.tick()
 
-                        assert mock_execute_instruction.call_count == i
-                        assert mock_decrement_time.call_count == i // instructions_per_update
+                    assert mock_execute_instruction.call_count == i
+                    assert mock_decrement_time.call_count == i // instructions_per_update
 
     def test_callbacks_in_tick(self) -> None:
         for _ in range(10):
@@ -183,7 +184,7 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            value = randint(0, 0xfff)
+            value = randint(0, 0xFFF)
 
             with pytest.raises(NotImplementedError) as exc_info:
                 sut._instruction_sys(value)
@@ -201,20 +202,20 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
+            address = randint(0, 0xFFE)
             while True:
-                instruction = randint(0, 0x0fff)
-                if instruction != 0x00e0 and instruction != 0x00ee:
+                instruction = randint(0, 0x0FFF)
+                if instruction not in (0x00E0, 0x00EE):
                     break
 
             sut._pc = address
             mock_bus.memory[address] = instruction >> 8
-            mock_bus.memory[address + 1] = instruction & 0xff
+            mock_bus.memory[address + 1] = instruction & 0xFF
 
             with patch.object(sut, '_instruction_sys') as mock_instruction:
                 sut._execute_instruction()
 
-                mock_instruction.assert_called_once_with(instruction & 0xfff)
+                mock_instruction.assert_called_once_with(instruction & 0xFFF)
                 assert sut._pc == address + 2
 
     def test_instruction_jump(self) -> None:
@@ -228,7 +229,7 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xfff)
+            address = randint(0, 0xFFF)
 
             sut._instruction_jump(address)
 
@@ -245,13 +246,13 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
+            address = randint(0, 0xFFE)
             op = 1
-            nnn = randint(0, 0xfff)
+            nnn = randint(0, 0xFFF)
 
             sut._pc = address
             mock_bus.memory[address] = (op << 4) | (nnn >> 8)
-            mock_bus.memory[address + 1] = nnn & 0xff
+            mock_bus.memory[address + 1] = nnn & 0xFF
 
             with patch.object(sut, '_instruction_jump') as mock_instruction:
                 sut._execute_instruction()
@@ -270,8 +271,8 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xf00)
-            v0 = randint(0, 0xff)
+            address = randint(0, 0xF00)
+            v0 = randint(0, 0xFF)
 
             sut._v[0] = v0
 
@@ -290,13 +291,13 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
-            op = 0xb
-            nnn = randint(0, 0xfff)
+            address = randint(0, 0xFFE)
+            op = 0xB
+            nnn = randint(0, 0xFFF)
 
             sut._pc = address
             mock_bus.memory[address] = (op << 4) | (nnn >> 8)
-            mock_bus.memory[address + 1] = nnn & 0xff
+            mock_bus.memory[address + 1] = nnn & 0xFF
 
             with patch.object(sut, '_instruction_jump_v0') as mock_instruction:
                 sut._execute_instruction()
@@ -315,7 +316,7 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xf00)
+            address = randint(0, 0xF00)
 
             for i in range(16):
                 value = randint(0, 255)
@@ -329,7 +330,7 @@ class TestChip8Core:
 
                 sut._pc = address
 
-                sut._instruction_skip_eq_imediate(i, (value + 1) & 0xff)
+                sut._instruction_skip_eq_imediate(i, (value + 1) & 0xFF)
 
                 assert sut._pc == address
 
@@ -344,10 +345,10 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
+            address = randint(0, 0xFFE)
             op = 3
             x = randint(0, 15)
-            nn = randint(0, 0xff)
+            nn = randint(0, 0xFF)
 
             sut._pc = address
             mock_bus.memory[address] = (op << 4) | x
@@ -370,7 +371,7 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xf00)
+            address = randint(0, 0xF00)
 
             for i in range(16):
                 j = choice([v for v in range(16) if v != i])
@@ -385,7 +386,7 @@ class TestChip8Core:
                 assert sut._pc == address + 2
 
                 sut._pc = address
-                sut._v[j] = (value + 1) & 0xff
+                sut._v[j] = (value + 1) & 0xFF
 
                 sut._instruction_skip_eq_register(i, j)
 
@@ -402,7 +403,7 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
+            address = randint(0, 0xFFE)
             op = 5
             x = randint(0, 15)
             y = randint(0, 15)
@@ -429,7 +430,7 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xf00)
+            address = randint(0, 0xF00)
 
             for i in range(16):
                 value = randint(0, 255)
@@ -437,7 +438,7 @@ class TestChip8Core:
                 sut._pc = address
                 sut._v[i] = value
 
-                sut._instruction_skip_ne_imediate(i, (value + 1) & 0xff)
+                sut._instruction_skip_ne_imediate(i, (value + 1) & 0xFF)
 
                 assert sut._pc == address + 2
 
@@ -458,10 +459,10 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
+            address = randint(0, 0xFFE)
             op = 4
             x = randint(0, 15)
-            nn = randint(0, 0xff)
+            nn = randint(0, 0xFF)
 
             sut._pc = address
             mock_bus.memory[address] = (op << 4) | x
@@ -484,7 +485,7 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xf00)
+            address = randint(0, 0xF00)
 
             for i in range(16):
                 j = choice([v for v in range(16) if v != i])
@@ -492,7 +493,7 @@ class TestChip8Core:
 
                 sut._pc = address
                 sut._v[i] = value
-                sut._v[j] = (value + 1) & 0xff
+                sut._v[j] = (value + 1) & 0xFF
 
                 sut._instruction_skip_ne_register(i, j)
 
@@ -516,7 +517,7 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
+            address = randint(0, 0xFFE)
             op = 9
             x = randint(0, 15)
             y = randint(0, 15)
@@ -546,7 +547,7 @@ class TestChip8Core:
             sp = sut._sp
 
             for _ in range(12):
-                address = randint(0, 0xf00)
+                address = randint(0, 0xF00)
                 addresses.append(address)
                 sp += 2
 
@@ -576,13 +577,13 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
+            address = randint(0, 0xFFE)
             op = 2
-            nnn = randint(0, 0xfff)
+            nnn = randint(0, 0xFFF)
 
             sut._pc = address
             mock_bus.memory[address] = (op << 4) | (nnn >> 8)
-            mock_bus.memory[address + 1] = nnn & 0xff
+            mock_bus.memory[address + 1] = nnn & 0xFF
 
             with patch.object(sut, '_instruction_call') as mock_instruction:
                 sut._execute_instruction()
@@ -601,12 +602,12 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
-            instruction = 0x00ee
+            address = randint(0, 0xFFE)
+            instruction = 0x00EE
 
             sut._pc = address
             mock_bus.memory[address] = instruction >> 8
-            mock_bus.memory[address + 1] = instruction & 0xff
+            mock_bus.memory[address + 1] = instruction & 0xFF
 
             with patch.object(sut, '_instruction_rts') as mock_instruction:
                 sut._execute_instruction()
@@ -617,7 +618,7 @@ class TestChip8Core:
     def test_instruction_movm_to_i(self, mock_bus: MockBus) -> None:
         for x in range(16):
             values = [randint(0, 255) for _ in range(x + 1)]
-            address = randint(0, 0xf00)
+            address = randint(0, 0xF00)
 
             sut = Chip8Core(
                 bus=mock_bus.bus,
@@ -648,8 +649,8 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
-            op = 0xf
+            address = randint(0, 0xFFE)
+            op = 0xF
             x = randint(0, 15)
             nn = 0x55
 
@@ -666,7 +667,7 @@ class TestChip8Core:
     def test_instruction_movm_from_i(self, mock_bus: MockBus) -> None:
         for x in range(16):
             values = [randint(0, 255) for _ in range(x + 1)]
-            address = randint(0, 0xf00)
+            address = randint(0, 0xF00)
             for x2, value in enumerate(values):
                 mock_bus.memory[address + x2] = value
 
@@ -697,8 +698,8 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
-            op = 0xf
+            address = randint(0, 0xFFE)
+            op = 0xF
             x = randint(0, 15)
             nn = 0x65
 
@@ -742,10 +743,10 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
+            address = randint(0, 0xFFE)
             op = 6
             x = randint(0, 15)
-            nn = randint(0, 0xff)
+            nn = randint(0, 0xFF)
 
             sut._pc = address
             mock_bus.memory[address] = (op << 4) | x
@@ -769,8 +770,8 @@ class TestChip8Core:
 
         for x in range(16):
             values = [randint(0, 255) for _ in range(16)]
-            for x, value in enumerate(values):
-                sut._v[x] = value
+            for x2, value in enumerate(values):
+                sut._v[x2] = value
 
             for y in range(16):
                 sut._instruction_mov_register(x, y)
@@ -788,7 +789,7 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
+            address = randint(0, 0xFFE)
             op = 8
             x = randint(0, 15)
             y = randint(0, 15)
@@ -816,8 +817,8 @@ class TestChip8Core:
 
         for x in range(16):
             values = [randint(0, 255) for _ in range(16)]
-            for x, value in enumerate(values):
-                sut._v[x] = value
+            for x2, value in enumerate(values):
+                sut._v[x2] = value
 
             for y in range(16):
                 sut._v[x] = values[x]
@@ -837,7 +838,7 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
+            address = randint(0, 0xFFE)
             op = 8
             x = randint(0, 15)
             y = randint(0, 15)
@@ -865,8 +866,8 @@ class TestChip8Core:
 
         for x in range(16):
             values = [randint(0, 255) for _ in range(16)]
-            for x, value in enumerate(values):
-                sut._v[x] = value
+            for x2, value in enumerate(values):
+                sut._v[x2] = value
 
             for y in range(16):
                 sut._v[x] = values[x]
@@ -886,7 +887,7 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
+            address = randint(0, 0xFFE)
             op = 8
             x = randint(0, 15)
             y = randint(0, 15)
@@ -914,8 +915,8 @@ class TestChip8Core:
 
         for x in range(16):
             values = [randint(0, 255) for _ in range(16)]
-            for x, value in enumerate(values):
-                sut._v[x] = value
+            for x2, value in enumerate(values):
+                sut._v[x2] = value
 
             for y in range(16):
                 sut._v[x] = values[x]
@@ -935,7 +936,7 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
+            address = randint(0, 0xFFE)
             op = 8
             x = randint(0, 15)
             y = randint(0, 15)
@@ -969,7 +970,7 @@ class TestChip8Core:
 
             sut._instruction_add_imediate(x, value2)
 
-            assert sut._v[x] == (value + value2) & 0xff
+            assert sut._v[x] == (value + value2) & 0xFF
 
     def test_execute_instruction_add_imediate(self, mock_bus: MockBus) -> None:
         sut = Chip8Core(
@@ -982,10 +983,10 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
+            address = randint(0, 0xFFE)
             op = 7
             x = randint(0, 15)
-            nn = randint(0, 0xff)
+            nn = randint(0, 0xFF)
 
             sut._pc = address
             mock_bus.memory[address] = (op << 4) | x
@@ -1018,7 +1019,7 @@ class TestChip8Core:
 
                 sut._instruction_add_register(x, y)
 
-                assert sut._v[x] == total & 0xff
+                assert sut._v[x] == total & 0xFF
                 assert sut._v[15] == total >> 8
 
     def test_execute_instruction_add_register(self, mock_bus: MockBus) -> None:
@@ -1032,7 +1033,7 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
+            address = randint(0, 0xFFE)
             op = 8
             x = randint(0, 15)
             y = randint(0, 15)
@@ -1068,7 +1069,7 @@ class TestChip8Core:
 
                 sut._instruction_sub(x, y)
 
-                assert sut._v[x] == (value1 - value2 if x != y else 0) & 0xff
+                assert sut._v[x] == (value1 - value2 if x != y else 0) & 0xFF
                 assert sut._v[15] == int(value1 > value2 if x != y else False)
 
     def test_execute_instruction_sub(self, mock_bus: MockBus) -> None:
@@ -1082,7 +1083,7 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
+            address = randint(0, 0xFFE)
             op = 8
             x = randint(0, 15)
             y = randint(0, 15)
@@ -1118,7 +1119,7 @@ class TestChip8Core:
 
                 sut._instruction_subb(x, y)
 
-                assert sut._v[x] == (value2 - value1 if x != y else 0) & 0xff
+                assert sut._v[x] == (value2 - value1 if x != y else 0) & 0xFF
                 assert sut._v[15] == int(value2 > value1 if x != y else False)
 
     def test_execute_instruction_subb(self, mock_bus: MockBus) -> None:
@@ -1132,7 +1133,7 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
+            address = randint(0, 0xFFE)
             op = 8
             x = randint(0, 15)
             y = randint(0, 15)
@@ -1180,7 +1181,7 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
+            address = randint(0, 0xFFE)
             op = 8
             x = randint(0, 15)
             y = randint(0, 15)
@@ -1214,7 +1215,7 @@ class TestChip8Core:
 
                 sut._instruction_shl(x, y)
 
-                assert sut._v[x] == (value << 1) & 0xff
+                assert sut._v[x] == (value << 1) & 0xFF
                 assert sut._v[15] == value >> 7
 
     def test_execute_instruction_shl(self, mock_bus: MockBus) -> None:
@@ -1228,11 +1229,11 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
+            address = randint(0, 0xFFE)
             op = 8
             x = randint(0, 15)
             y = randint(0, 15)
-            n = 0xe
+            n = 0xE
 
             sut._pc = address
             mock_bus.memory[address] = (op << 4) | x
@@ -1271,12 +1272,12 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
-            instruction = 0x00e0
+            address = randint(0, 0xFFE)
+            instruction = 0x00E0
 
             sut._pc = address
             mock_bus.memory[address] = instruction >> 8
-            mock_bus.memory[address + 1] = instruction & 0xff
+            mock_bus.memory[address + 1] = instruction & 0xFF
 
             with patch.object(sut, '_instruction_cls') as mock_instruction:
                 sut._execute_instruction()
@@ -1292,7 +1293,7 @@ class TestChip8Core:
             vy = choice([i for i in range(15) if i != vx])
             n = randint(1, 10)
             values = [randint(0, 255) for _ in range(n)]
-            address = randint(0, 0xf00)
+            address = randint(0, 0xF00)
             for i, value in enumerate(values):
                 mock_bus.memory[address + i] = value
             flipped = choice([True, False])
@@ -1328,11 +1329,11 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
-            op = 0xd
+            address = randint(0, 0xFFE)
+            op = 0xD
             x = randint(0, 15)
             y = randint(0, 15)
-            n = randint(0, 0xf)
+            n = randint(0, 0xF)
 
             sut._pc = address
             mock_bus.memory[address] = (op << 4) | x
@@ -1375,8 +1376,8 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
-            op = 0xf
+            address = randint(0, 0xFFE)
+            op = 0xF
             x = randint(0, 15)
             nn = 0x29
 
@@ -1401,7 +1402,7 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xfff)
+            address = randint(0, 0xFFF)
 
             sut._instruction_mov_to_i(address)
 
@@ -1418,13 +1419,13 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
-            op = 0xa
-            nnn = randint(0, 0xfff)
+            address = randint(0, 0xFFE)
+            op = 0xA
+            nnn = randint(0, 0xFFF)
 
             sut._pc = address
             mock_bus.memory[address] = (op << 4) | (nnn >> 8)
-            mock_bus.memory[address + 1] = nnn & 0xff
+            mock_bus.memory[address + 1] = nnn & 0xFF
 
             with patch.object(sut, '_instruction_mov_to_i') as mock_instruction:
                 sut._execute_instruction()
@@ -1443,7 +1444,7 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            i = randint(0, 0xfff)
+            i = randint(0, 0xFFF)
             x = randint(0, 15)
             value = randint(0, 255)
 
@@ -1452,7 +1453,7 @@ class TestChip8Core:
 
             sut._instruction_add_to_i(x)
 
-            assert sut._i == (i + value) & 0xfff
+            assert sut._i == (i + value) & 0xFFF
 
     def test_execute_instruction_add_to_i(self, mock_bus: MockBus) -> None:
         sut = Chip8Core(
@@ -1465,10 +1466,10 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
-            op = 0xf
+            address = randint(0, 0xFFE)
+            op = 0xF
             x = randint(0, 15)
-            nn = 0x1e
+            nn = 0x1E
 
             sut._pc = address
             mock_bus.memory[address] = (op << 4) | x
@@ -1483,7 +1484,7 @@ class TestChip8Core:
     @pytest.mark.parametrize('key', Key)
     def test_instruction_skip_key(self, key: Key) -> None:
         for _ in range(10):
-            address = randint(0, 0xf00)
+            address = randint(0, 0xF00)
             x = randint(0, 15)
 
             keyboard = MagicMock()
@@ -1523,10 +1524,10 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
-            op = 0xe
+            address = randint(0, 0xFFE)
+            op = 0xE
             x = randint(0, 15)
-            nn = 0x9e
+            nn = 0x9E
 
             sut._pc = address
             mock_bus.memory[address] = (op << 4) | x
@@ -1541,7 +1542,7 @@ class TestChip8Core:
     @pytest.mark.parametrize('key', Key)
     def test_instruction_skip_nokey(self, key: Key) -> None:
         for _ in range(10):
-            address = randint(0, 0xf00)
+            address = randint(0, 0xF00)
             x = randint(0, 15)
 
             keyboard = MagicMock()
@@ -1581,10 +1582,10 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
-            op = 0xe
+            address = randint(0, 0xFFE)
+            op = 0xE
             x = randint(0, 15)
-            nn = 0xa1
+            nn = 0xA1
 
             sut._pc = address
             mock_bus.memory[address] = (op << 4) | x
@@ -1599,7 +1600,7 @@ class TestChip8Core:
     @pytest.mark.parametrize('key', Key)
     def test_instruction_wait_key(self, key: Key) -> None:
         for _ in range(10):
-            address = randint(2, 0xfff)
+            address = randint(2, 0xFFF)
             x = randint(0, 15)
             future: Future[Key] = Future()
 
@@ -1641,10 +1642,10 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
-            op = 0xf
+            address = randint(0, 0xFFE)
+            op = 0xF
             x = randint(0, 15)
-            nn = 0x0a
+            nn = 0x0A
 
             sut._pc = address
             mock_bus.memory[address] = (op << 4) | x
@@ -1687,8 +1688,8 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
-            op = 0xf
+            address = randint(0, 0xFFE)
+            op = 0xF
             x = randint(0, 15)
             nn = 0x07
 
@@ -1733,8 +1734,8 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
-            op = 0xf
+            address = randint(0, 0xFFE)
+            op = 0xF
             x = randint(0, 15)
             nn = 0x15
 
@@ -1779,8 +1780,8 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
-            op = 0xf
+            address = randint(0, 0xFFE)
+            op = 0xF
             x = randint(0, 15)
             nn = 0x18
 
@@ -1828,10 +1829,10 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
-            op = 0xc
+            address = randint(0, 0xFFE)
+            op = 0xC
             x = randint(0, 15)
-            nn = randint(0, 0xff)
+            nn = randint(0, 0xFF)
 
             sut._pc = address
             mock_bus.memory[address] = (op << 4) | x
@@ -1855,7 +1856,7 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xf00)
+            address = randint(0, 0xF00)
             value = randint(0, 255)
 
             sut._i = address
@@ -1878,8 +1879,8 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
-            op = 0xf
+            address = randint(0, 0xFFE)
+            op = 0xF
             x = randint(0, 15)
             nn = 0x33
 
@@ -1904,10 +1905,10 @@ class TestChip8Core:
         )
 
         for _ in range(10):
-            address = randint(0, 0xffe)
-            op = 0xf
+            address = randint(0, 0xFFE)
+            op = 0xF
             x = randint(0, 15)
-            nn = randint(0x66, 0xff)
+            nn = randint(0x66, 0xFF)
 
             sut._pc = address
             mock_bus.memory[address] = (op << 4) | x

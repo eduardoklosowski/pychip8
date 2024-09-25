@@ -51,4 +51,4 @@ class TestRam:
 
         for i in range(255, 513):
             sut[i] = i
-            assert sut[i] == i & 0xff
+            assert sut[i] == i & 0xFF

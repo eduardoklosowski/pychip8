@@ -1,6 +1,5 @@
 from asyncio import Future
 from enum import IntEnum, auto
-from typing import List
 
 
 class Key(IntEnum):
@@ -25,14 +24,10 @@ class Key(IntEnum):
 class Keyboard:
     def __init__(self) -> None:
         self._pressed = [False for _ in range(len(Key))]
-        self._notify_pressed: List[Future[Key]] = []
+        self._notify_pressed: list[Future[Key]] = []
 
     def __repr__(self) -> str:
-        keys = ', '.join(
-            f'{i:X}'
-            for i, value in enumerate(self._pressed)
-            if value
-        )
+        keys = ', '.join(f'{i:X}' for i, value in enumerate(self._pressed) if value)
         return f'Keyboard(pressed="{keys}")'
 
     def __len__(self) -> int:

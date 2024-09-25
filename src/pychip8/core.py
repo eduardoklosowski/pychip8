@@ -1,10 +1,13 @@
-from asyncio import Future
+from collections.abc import Callable
 from secrets import randbits
-from typing import Callable, Optional
+from typing import TYPE_CHECKING
 
 from .devices.devicebus import DeviceBus
 from .devices.display import Display
 from .devices.keyboard import Key, Keyboard
+
+if TYPE_CHECKING:
+    from asyncio import Future
 
 
 class Chip8Core:
@@ -27,19 +30,19 @@ class Chip8Core:
         self._pc = entrypoint
         self._delay_timer = 0
         self._sound_timer = 0
-        self._waiting_keyboard: Optional[Future[Key]] = None
+        self._waiting_keyboard: Future[Key] | None = None
         self._instructions_per_update = instructions_per_update
         self._instructions_executable = 0
-        self._tick_callback: Optional[Callable[[], None]] = None
-        self._update_callback: Optional[Callable[[], None]] = None
+        self._tick_callback: Callable[[], None] | None = None
+        self._update_callback: Callable[[], None] | None = None
 
     def __repr__(self) -> str:
         return f'Chip8Core(pc={self._pc})'
 
-    def set_tick_callback(self, callback: Optional[Callable[[], None]], /) -> None:
+    def set_tick_callback(self, callback: Callable[[], None] | None, /) -> None:
         self._tick_callback = callback
 
-    def set_update_callback(self, callback: Optional[Callable[[], None]], /) -> None:
+    def set_update_callback(self, callback: Callable[[], None] | None, /) -> None:
         self._update_callback = callback
 
     def tick(self) -> None:
@@ -59,19 +62,19 @@ class Chip8Core:
         if self._sound_timer:
             self._sound_timer -= 1
 
-    def _execute_instruction(self) -> None:
+    def _execute_instruction(self) -> None:  # noqa: C901, PLR0912, PLR0915
         instruction = (self._bus[self._pc] << 8) | (self._bus[self._pc + 1])
-        op = (instruction >> 12) & 0xf
-        nnn = instruction & 0xfff
-        nn = instruction & 0xff
-        n = instruction & 0xf
-        x = (instruction >> 8) & 0xf
-        y = (instruction >> 4) & 0xf
+        op = (instruction >> 12) & 0xF
+        nnn = instruction & 0xFFF
+        nn = instruction & 0xFF
+        n = instruction & 0xF
+        x = (instruction >> 8) & 0xF
+        y = (instruction >> 4) & 0xF
         self._pc += 2
 
-        if instruction == 0x00e0:
+        if instruction == 0x00E0:
             self._instruction_cls()
-        elif instruction == 0x00ee:
+        elif instruction == 0x00EE:
             self._instruction_rts()
         elif op == 0:
             self._instruction_sys(nnn)
@@ -105,39 +108,39 @@ class Chip8Core:
             self._instruction_shr(x, y)
         elif op == 8 and n == 7:
             self._instruction_subb(x, y)
-        elif op == 8 and n == 0xe:
+        elif op == 8 and n == 0xE:
             self._instruction_shl(x, y)
         elif op == 9 and n == 0:
             self._instruction_skip_ne_register(x, y)
-        elif op == 0xa:
+        elif op == 0xA:
             self._instruction_mov_to_i(nnn)
-        elif op == 0xb:
+        elif op == 0xB:
             self._instruction_jump_v0(nnn)
-        elif op == 0xc:
+        elif op == 0xC:
             self._instruction_rnd(x, nn)
-        elif op == 0xd:
+        elif op == 0xD:
             self._instruction_sprite(x, y, n)
-        elif op == 0xe and nn == 0x9e:
+        elif op == 0xE and nn == 0x9E:
             self._instruction_skip_key(x)
-        elif op == 0xe and nn == 0xa1:
+        elif op == 0xE and nn == 0xA1:
             self._instruction_skip_nokey(x)
-        elif op == 0xf and nn == 0x07:
+        elif op == 0xF and nn == 0x07:
             self._instruction_mov_from_delay(x)
-        elif op == 0xf and nn == 0x0a:
+        elif op == 0xF and nn == 0x0A:
             self._instruction_wait_key(x)
-        elif op == 0xf and nn == 0x15:
+        elif op == 0xF and nn == 0x15:
             self._instruction_mov_to_delay(x)
-        elif op == 0xf and nn == 0x18:
+        elif op == 0xF and nn == 0x18:
             self._instruction_mov_to_sound(x)
-        elif op == 0xf and nn == 0x1e:
+        elif op == 0xF and nn == 0x1E:
             self._instruction_add_to_i(x)
-        elif op == 0xf and nn == 0x29:
+        elif op == 0xF and nn == 0x29:
             self._instruction_spritechar(x)
-        elif op == 0xf and nn == 0x33:
+        elif op == 0xF and nn == 0x33:
             self._instruction_movbcd(x)
-        elif op == 0xf and nn == 0x55:
+        elif op == 0xF and nn == 0x55:
             self._instruction_movm_to_i(x)
-        elif op == 0xf and nn == 0x65:
+        elif op == 0xF and nn == 0x65:
             self._instruction_movm_from_i(x)
         else:
             raise RuntimeError('Undefined instruction')
@@ -170,7 +173,7 @@ class Chip8Core:
     def _instruction_call(self, nnn: int, /) -> None:
         self._sp += 2
         self._bus[self._sp] = self._pc >> 8
-        self._bus[self._sp + 1] = self._pc & 0xff
+        self._bus[self._sp + 1] = self._pc & 0xFF
         self._pc = nnn
 
     def _instruction_rts(self) -> None:
@@ -203,20 +206,20 @@ class Chip8Core:
         self._v[x] ^= self._v[y]
 
     def _instruction_add_imediate(self, x: int, nn: int, /) -> None:
-        self._v[x] = (self._v[x] + nn) & 0xff
+        self._v[x] = (self._v[x] + nn) & 0xFF
 
     def _instruction_add_register(self, x: int, y: int, /) -> None:
         total = self._v[x] + self._v[y]
-        self._v[x] = total & 0xff
+        self._v[x] = total & 0xFF
         self._v[15] = total >> 8
 
     def _instruction_sub(self, x: int, y: int, /) -> None:
         self._v[15] = int(self._v[x] > self._v[y])
-        self._v[x] = (self._v[x] - self._v[y]) & 0xff
+        self._v[x] = (self._v[x] - self._v[y]) & 0xFF
 
     def _instruction_subb(self, x: int, y: int, /) -> None:
         self._v[15] = int(self._v[y] > self._v[x])
-        self._v[x] = (self._v[y] - self._v[x]) & 0xff
+        self._v[x] = (self._v[y] - self._v[x]) & 0xFF
 
     def _instruction_shr(self, x: int, y: int, /) -> None:
         self._v[15] = self._v[y] & 1
@@ -224,7 +227,7 @@ class Chip8Core:
 
     def _instruction_shl(self, x: int, y: int, /) -> None:
         self._v[15] = self._v[y] >> 7
-        self._v[x] = (self._v[y] << 1) & 0xff
+        self._v[x] = (self._v[y] << 1) & 0xFF
 
     def _instruction_cls(self) -> None:
         self._display.clear()
@@ -240,7 +243,7 @@ class Chip8Core:
         self._i = nnn
 
     def _instruction_add_to_i(self, x: int, /) -> None:
-        self._i = (self._i + self._v[x]) & 0xfff
+        self._i = (self._i + self._v[x]) & 0xFFF
 
     def _instruction_skip_key(self, x: int, /) -> None:
         if self._keyboard[Key(self._v[x])]:

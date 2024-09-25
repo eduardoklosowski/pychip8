@@ -1,10 +1,10 @@
+from collections.abc import Iterator
 from time import monotonic_ns, sleep
-from typing import Iterator, Protocol
+from typing import Protocol
 
 
 class Tickable(Protocol):
-    def tick(self) -> None:
-        ...
+    def tick(self) -> None: ...
 
 
 def clock(tickable: Tickable, hz: int, /) -> Iterator[None]:

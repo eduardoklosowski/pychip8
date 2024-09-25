@@ -51,11 +51,7 @@ class TestDisplay:
                     sut.set_pixel(x, y, frame[y][x])
 
             assert str(sut) == '\n'.join(
-                ''.join(
-                    self.WHITE if pixel else self.BLACK
-                    for pixel in line
-                )
-                for line in frame
+                ''.join(self.WHITE if pixel else self.BLACK for pixel in line) for line in frame
             )
 
     def test_size(self) -> None:
@@ -276,7 +272,7 @@ class TestDisplay:
             y1 = randint(0, height - 1)
             x2 = randint(x1 - 3, x1 + 3)
             y2 = randint(y1 - 3, y1 + 3)
-            sprite = [0xf0, 0xf0, 0xf0, 0xf0]
+            sprite = [0xF0, 0xF0, 0xF0, 0xF0]
             pixels1 = {(x % width, y % height) for x in range(x1, x1 + 4) for y in range(y1, y1 + 4)}
             pixels2 = {(x % width, y % height) for x in range(x2, x2 + 4) for y in range(y2, y2 + 4)}
             pixels = pixels1.difference(pixels2) | pixels2.difference(pixels1)

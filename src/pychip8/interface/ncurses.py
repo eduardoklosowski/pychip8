@@ -1,12 +1,14 @@
 import curses
 import os
 import sys
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import BinaryIO, Final, Iterator, Tuple
+from pathlib import Path
+from typing import BinaryIO, Final
 
-from ..clock import clock
-from ..cpu import Chip8
-from ..devices.keyboard import Key
+from pychip8.clock import clock
+from pychip8.cpu import Chip8
+from pychip8.devices.keyboard import Key
 
 
 @contextmanager
@@ -32,7 +34,7 @@ def ncurses_environment() -> Iterator['curses._CursesWindow']:
 class Window:
     BLACK_PIXEL: Final = ' '
     WHITE_PIXEL: Final = '\u2588'
-    KEYS = {
+    KEYS: Final = {
         '1': Key.KEY1,
         '2': Key.KEY2,
         '3': Key.KEY3,
@@ -54,14 +56,13 @@ class Window:
     def __init__(self, *, scr: 'curses._CursesWindow', cpu: Chip8) -> None:
         self._scr = scr
         self._cpu = cpu
-        self._display = cpu._display
-        self._keyboard = cpu._keyboard
+        self._display = cpu.display
+        self._keyboard = cpu.keyboard
 
         columns, lines = os.get_terminal_size()
         if columns < self._display.width or lines < self._display.height + 1:
             raise RuntimeError(
-                f'Small terminal ({columns}x{lines}), '
-                f'minimum {self._display.width}x{self._display.height + 1}',
+                f'Small terminal ({columns}x{lines}), minimum {self._display.width}x{self._display.height + 1}',
             )
 
         self._display.set_update_pixel_callback(self.set_pixel)
@@ -103,7 +104,7 @@ def main(
     program: BinaryIO,
     instructions_per_update: int = 16,
     clock: int = 960,
-    size: Tuple[int, int] = (0, 0),
+    size: tuple[int, int] = (0, 0),  # noqa: ARG001
 ) -> None:
     with ncurses_environment() as stdscr:
         cpu = Chip8.new_cosmac_vip_with_4096_ram(instructions_per_update=instructions_per_update)
@@ -113,5 +114,5 @@ def main(
 
 
 if __name__ == '__main__':
-    with open(sys.argv[1], 'rb') as f:
+    with Path(sys.argv[1]).open('rb') as f:
         main(program=f)

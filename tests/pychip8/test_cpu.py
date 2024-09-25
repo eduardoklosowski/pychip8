@@ -75,7 +75,7 @@ class TestChip8:
             cores = [MagicMock() for _ in range(i)]
 
             sut = Chip8(
-                cores=cores,  # type: ignore
+                cores=cores,  # type: ignore  # noqa: PGH003
                 bus=MagicMock(),
                 display=MagicMock(),
                 keyboard=MagicMock(),
@@ -97,7 +97,7 @@ class TestChip8:
             update_callback = MagicMock()
 
             sut = Chip8(
-                cores=cores,  # type: ignore
+                cores=cores,  # type: ignore  # noqa: PGH003
                 bus=MagicMock(),
                 display=MagicMock(),
                 keyboard=MagicMock(),
@@ -111,3 +111,29 @@ class TestChip8:
 
                 assert tick_callback.call_count == j
                 assert update_callback.call_count == j // instructions_per_update
+
+    def test_display(self) -> None:
+        mock_display = MagicMock()
+
+        sut = Chip8(
+            cores=[MagicMock()],
+            bus=MagicMock(),
+            display=mock_display,
+            keyboard=MagicMock(),
+            instructions_per_update=16,
+        )
+
+        assert sut.display is mock_display
+
+    def test_keyboard(self) -> None:
+        mock_keyboard = MagicMock()
+
+        sut = Chip8(
+            cores=[MagicMock()],
+            bus=MagicMock(),
+            display=MagicMock(),
+            keyboard=mock_keyboard,
+            instructions_per_update=16,
+        )
+
+        assert sut.keyboard is mock_keyboard

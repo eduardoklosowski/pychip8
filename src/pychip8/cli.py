@@ -1,9 +1,9 @@
 from argparse import ArgumentParser
 from importlib import import_module
-from typing import Tuple
+from pathlib import Path
 
 
-def parse_size(value: str) -> Tuple[int, int]:
+def parse_size(value: str) -> tuple[int, int]:
     width, height = value.split('x')
     return int(width), int(height)
 
@@ -14,7 +14,6 @@ parser = ArgumentParser(
 )
 parser.add_argument(
     'file',
-    type=lambda x: open(x, 'rb'),  # noqa: SIM115
     help='path of the ROM to be executed',
 )
 parser.add_argument(
@@ -64,12 +63,13 @@ parser.add_argument(
 def main() -> None:
     try:
         args = parser.parse_args()
-        import_module(f'.{args.interface}', 'pychip8.interface').main(
-            program=args.file,
-            instructions_per_update=args.instructions_per_update,
-            clock=args.clock,
-            size=args.size,
-        )
+        with Path(args.file).open('rb') as f:
+            import_module(f'.{args.interface}', 'pychip8.interface').main(
+                program=f,
+                instructions_per_update=args.instructions_per_update,
+                clock=args.clock,
+                size=args.size,
+            )
     except KeyboardInterrupt:
         ...
 

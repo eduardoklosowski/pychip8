@@ -1,20 +1,17 @@
-from typing import BinaryIO, List, Protocol, Tuple
+from typing import BinaryIO, Protocol
 
 
 class Device(Protocol):
-    def __len__(self) -> int:
-        ...
+    def __len__(self) -> int: ...
 
-    def __getitem__(self, address: int, /) -> int:
-        ...
+    def __getitem__(self, address: int, /) -> int: ...
 
-    def __setitem__(self, address: int, value: int, /) -> None:
-        ...
+    def __setitem__(self, address: int, value: int, /) -> None: ...
 
 
 class DeviceBus:
     def __init__(self) -> None:
-        self._devices: List[Tuple[int, int, Device]] = []
+        self._devices: list[tuple[int, int, Device]] = []
 
     def __repr__(self) -> str:
         return f'DeviceBus(devices={len(self._devices)})'

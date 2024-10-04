@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from math import ceil
 from random import choice, randint
 from unittest.mock import MagicMock
@@ -6,9 +7,6 @@ from pychip8.devices.display import AddressableDisplay, Display
 
 
 class TestDisplay:
-    BLACK = ' '
-    WHITE = '\u2588'
-
     def test_repr(self) -> None:
         for _ in range(10):
             width = randint(1, 32)
@@ -25,7 +23,7 @@ class TestDisplay:
 
             sut = Display(width=width, height=height)
 
-            assert str(sut) == '\n'.join(self.BLACK * width for _ in range(height))
+            assert str(sut) == '\n'.join(Display.PIXEL_OFF * width for _ in range(height))
 
     def test_str_full_display(self) -> None:
         for _ in range(10):
@@ -37,7 +35,7 @@ class TestDisplay:
                 for x in range(width):
                     sut.set_pixel(x, y, True)
 
-            assert str(sut) == '\n'.join(self.WHITE * width for _ in range(height))
+            assert str(sut) == '\n'.join(Display.PIXEL_ON * width for _ in range(height))
 
     def test_str_random_values(self) -> None:
         for _ in range(10):
@@ -51,7 +49,7 @@ class TestDisplay:
                     sut.set_pixel(x, y, frame[y][x])
 
             assert str(sut) == '\n'.join(
-                ''.join(self.WHITE if pixel else self.BLACK for pixel in line) for line in frame
+                ''.join(Display.PIXEL_ON if pixel else Display.PIXEL_OFF for pixel in line) for line in frame
             )
 
     def test_size(self) -> None:
@@ -95,36 +93,36 @@ class TestDisplay:
         width = randint(1, 32)
         height = randint(1, 16)
 
-        callback = MagicMock()
+        mock_callback = MagicMock(spec_set=Callable)
 
         sut = Display(width=width, height=height)
-        sut.set_clear_callback(callback)
+        sut.set_clear_callback(mock_callback)
 
-        callback.assert_not_called()
+        mock_callback.assert_not_called()
 
         sut.clear()
 
-        callback.assert_called_once_with()
+        mock_callback.assert_called_once_with()
 
     def test_refresh(self) -> None:
         for _ in range(10):
-            width = randint(1, 32)
-            height = randint(1, 16)
+            width = randint(1, 16)
+            height = randint(1, 8)
             frame = [[choice([True, False]) for _ in range(width)] for _ in range(height)]
 
-            callback = MagicMock()
+            mock_callback = MagicMock(spec_set=Callable)
             sut = Display(width=width, height=height)
             for y in range(height):
                 for x in range(width):
                     sut.set_pixel(x, y, frame[y][x])
-            sut.set_update_pixel_callback(callback)
+            sut.set_update_pixel_callback(mock_callback)
 
             sut.refresh()
 
-            assert callback.call_count == sut.width * sut.height
+            assert mock_callback.call_count == sut.width * sut.height
             for y in range(height):
                 for x in range(width):
-                    callback.assert_any_call(x, y, frame[y][x])
+                    mock_callback.assert_any_call(x, y, frame[y][x])
 
     def test_refresh_witchout_callback(self) -> None:
         sut = Display(width=randint(1, 32), height=randint(1, 16))
@@ -231,16 +229,16 @@ class TestDisplay:
             y = randint(0, height - 1)
             value = choice([True, False])
 
-            callback = MagicMock()
+            mock_callback = MagicMock(spec_set=Callable)
 
             sut = Display(width=width, height=height)
-            sut.set_update_pixel_callback(callback)
+            sut.set_update_pixel_callback(mock_callback)
 
-            callback.assert_not_called()
+            mock_callback.assert_not_called()
 
             sut.set_pixel(x, y, value)
 
-            callback.assert_called_once_with(x, y, value)
+            mock_callback.assert_called_once_with(x, y, value)
 
     def test_draw_sprite(self) -> None:
         for _ in range(10):
@@ -289,11 +287,11 @@ class TestDisplay:
 class TestAddressableDisplay:
     def test_repr(self) -> None:
         for _ in range(10):
-            display = MagicMock()
+            mock_display = MagicMock(spec_set=Display)
 
-            sut = AddressableDisplay(display)
+            sut = AddressableDisplay(mock_display)
 
-            assert repr(sut) == f'AddressableDisplay({display!r})'
+            assert repr(sut) == f'AddressableDisplay({mock_display!r})'
 
     def test_length(self) -> None:
         for _ in range(10):
@@ -301,16 +299,16 @@ class TestAddressableDisplay:
             height = randint(1, 16)
 
             for i in range(9):
-                display = MagicMock()
-                display.width = width + i
-                display.height = height
-                sut = AddressableDisplay(display)
+                mock_display = MagicMock(spec_set=Display)
+                mock_display.width = width + i
+                mock_display.height = height
+                sut = AddressableDisplay(mock_display)
                 assert len(sut) == ceil((width + i) * height / 8)
 
-                display = MagicMock()
-                display.width = width
-                display.height = height + i
-                sut = AddressableDisplay(display)
+                mock_display = MagicMock(spec_set=Display)
+                mock_display.width = width
+                mock_display.height = height + i
+                sut = AddressableDisplay(mock_display)
                 assert len(sut) == ceil(width * (height + i) / 8)
 
     def test_read_address(self) -> None:

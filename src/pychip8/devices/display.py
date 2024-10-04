@@ -3,6 +3,9 @@ from math import ceil
 
 
 class Display:
+    PIXEL_ON = '\u2588'
+    PIXEL_OFF = ' '
+
     def __init__(self, *, width: int, height: int) -> None:
         self._width = width
         self._height = height
@@ -14,7 +17,7 @@ class Display:
         return f'Display({self.width}x{self.height})'
 
     def __str__(self) -> str:
-        return '\n'.join(''.join('\u2588' if pixel else ' ' for pixel in line) for line in self._frame)
+        return '\n'.join(''.join(self.PIXEL_ON if pixel else self.PIXEL_OFF for pixel in line) for line in self._frame)
 
     @property
     def width(self) -> int:

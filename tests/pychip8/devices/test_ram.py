@@ -47,8 +47,8 @@ class TestRam:
                 assert sut[i] == 0
 
     def test_write_overflow(self) -> None:
-        sut = Ram(size=513)
+        sut = Ram(size=0xFF)
 
-        for i in range(255, 513):
-            sut[i] = i
-            assert sut[i] == i & 0xFF
+        for i in range(len(sut)):
+            sut[i] = i + 0x100
+            assert sut[i] == i

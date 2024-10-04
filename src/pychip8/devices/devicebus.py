@@ -17,11 +17,7 @@ class DeviceBus:
         return f'DeviceBus(devices={len(self._devices)})'
 
     def __len__(self) -> int:
-        size = 0
-        for _, end, _ in self._devices:
-            if end >= size:
-                size = end + 1
-        return size
+        return max((end + 1 for _, end, _ in self._devices), default=0)
 
     def __getitem__(self, address: int, /) -> int:
         for start, end, device in self._devices:

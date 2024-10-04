@@ -49,7 +49,5 @@ class TestRom:
         sut = Rom(size=self.MINIMUM_SIZE)
 
         for _ in range(10):
-            with pytest.raises(RuntimeError) as exc_info:
+            with pytest.raises(RuntimeError, match='^Writing on ROM$'):
                 sut[randint(0, self.MINIMUM_SIZE)] = 0
-
-            assert exc_info.value.args[0] == 'Writing on ROM'

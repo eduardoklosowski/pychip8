@@ -10,8 +10,10 @@ class TestKey:
         assert len(Key) == 16
 
     def test_keys(self) -> None:
-        for k in range(len(Key)):
-            assert Key(k).value == k
+        for i in range(len(Key)):
+            sut = Key(i)
+            assert sut.name == f'KEY{i:X}'
+            assert sut.value == i
 
 
 class TestKeyboard:
@@ -25,14 +27,14 @@ class TestKeyboard:
         sut = Keyboard()
         sut[key] = True
 
-        assert repr(sut) == f'Keyboard(pressed="{key:X}")'
+        assert repr(sut) == f'Keyboard(pressed="{key.name.removeprefix("KEY")}")'
 
     def test_repr_with_all_keys_pressed(self) -> None:
         sut = Keyboard()
-        for key in Key:
-            sut[key] = True
+        for k in Key:
+            sut[k] = True
 
-        assert repr(sut) == f'Keyboard(pressed="{", ".join(f"{i:X}" for i in range(len(Key)))}")'
+        assert repr(sut) == f'Keyboard(pressed="{", ".join(key.name.removeprefix("KEY") for key in Key)}")'
 
     def test_keyboard_size(self) -> None:
         sut = Keyboard()
@@ -77,19 +79,19 @@ class TestKeyboard:
     def test_press_all_keys(self) -> None:
         sut = Keyboard()
 
-        for key in Key:
-            assert sut[key] is False
-            sut[key] = True
-            assert sut[key] is True
-        for key in Key:
-            assert sut[key] is True
+        for k in Key:
+            assert sut[k] is False
+            sut[k] = True
+            assert sut[k] is True
+        for k in Key:
+            assert sut[k] is True
 
-        for key in Key:
-            assert sut[key] is True
-            sut[key] = False
-            assert sut[key] is False
-        for key in Key:
-            assert sut[key] is False
+        for k in Key:
+            assert sut[k] is True
+            sut[k] = False
+            assert sut[k] is False
+        for k in Key:
+            assert sut[k] is False
 
     @pytest.mark.parametrize('key', Key)
     def test_next_key_pressed(self, key: Key) -> None:

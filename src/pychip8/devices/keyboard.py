@@ -27,7 +27,9 @@ class Keyboard:
         self._notify_pressed: list[Future[Key]] = []
 
     def __repr__(self) -> str:
-        keys = ', '.join(f'{i:X}' for i, value in enumerate(self._pressed) if value)
+        keys = ', '.join(
+            f'{key.name.removeprefix("KEY")}' for key, value in zip(Key, self._pressed, strict=True) if value
+        )
         return f'Keyboard(pressed="{keys}")'
 
     def __len__(self) -> int:
@@ -44,7 +46,7 @@ class Keyboard:
                 if not future.cancelled():
                     future.set_result(key)
 
-    def next_key_pressed(self) -> 'Future[Key]':
+    def next_key_pressed(self) -> Future[Key]:
         future: Future[Key] = Future()
         self._notify_pressed.append(future)
         return future

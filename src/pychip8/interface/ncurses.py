@@ -52,12 +52,14 @@ class Window:
         'f': Key.KEYE,
         'v': Key.KEYF,
     }
+    CLOSE_KEY: Final = '\x1b'
 
-    def __init__(self, *, scr: 'curses._CursesWindow', cpu: Chip8) -> None:
-        self._scr = scr
+    def __init__(self, *, cpu: Chip8, scr: 'curses._CursesWindow') -> None:
         self._cpu = cpu
         self._display = cpu.display
         self._keyboard = cpu.keyboard
+
+        self._scr = scr
 
         columns, lines = os.get_terminal_size()
         if columns < self._display.width or lines < self._display.height + 1:
@@ -88,11 +90,11 @@ class Window:
                 self._keyboard[key] = False
             try:
                 char = self._scr.getkey()
-                if char == '\x1b':
+                if char == self.CLOSE_KEY:
                     running = False
                     break
                 key_pressed = self.KEYS.get(char)
-                if key_pressed:
+                if key_pressed is not None:
                     self._keyboard[key_pressed] = True
             except curses.error:
                 ...
@@ -109,7 +111,7 @@ def main(
     with ncurses_environment() as stdscr:
         cpu = Chip8.new_cosmac_vip_with_4096_ram(instructions_per_update=instructions_per_update)
         cpu.load_program(program)
-        window = Window(scr=stdscr, cpu=cpu)
+        window = Window(cpu=cpu, scr=stdscr)
         window.run(clock)
 
 

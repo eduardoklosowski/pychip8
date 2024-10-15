@@ -33,7 +33,7 @@ pysdl2 = "^0.9"
 
 [tool.poetry.group.lint.dependencies]
 ruff = "^0.6"
-mypy = "^1.11"
+mypy = "^1.12"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.3"

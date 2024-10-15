@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 def parse_size(value: str) -> tuple[int, int]:
-    width, height = value.split('x')
+    width, height = value.split('x', maxsplit=1)
     return int(width), int(height)
 
 

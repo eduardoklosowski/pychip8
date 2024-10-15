@@ -1,4 +1,5 @@
 from asyncio import Future
+from collections.abc import Callable
 from dataclasses import dataclass
 from random import choice, randint
 from unittest.mock import MagicMock, patch
@@ -7,7 +8,8 @@ import pytest
 
 from pychip8.core import Chip8Core
 from pychip8.devices.devicebus import DeviceBus
-from pychip8.devices.keyboard import Key
+from pychip8.devices.display import Display
+from pychip8.devices.keyboard import Key, Keyboard
 
 
 @dataclass
@@ -26,11 +28,11 @@ def mock_bus() -> MockBus:
     def write(x: int, y: int) -> None:
         memory[x] = y
 
-    bus = MagicMock()
-    bus.__getitem__.side_effect = read
-    bus.__setitem__.side_effect = write
+    mock_bus = MagicMock(spec_set=DeviceBus)
+    mock_bus.__getitem__.side_effect = read
+    mock_bus.__setitem__.side_effect = write
 
-    return MockBus(bus, memory)
+    return MockBus(mock_bus, memory)
 
 
 class TestChip8Core:
@@ -39,10 +41,10 @@ class TestChip8Core:
             pc = randint(0, 4096)
 
             sut = Chip8Core(
-                bus=MagicMock(),
+                bus=MagicMock(spec_set=DeviceBus),
                 reserved_address=0,
-                display=MagicMock(),
-                keyboard=MagicMock(),
+                display=MagicMock(spec_set=Display),
+                keyboard=MagicMock(spec_set=Keyboard),
                 entrypoint=pc,
                 instructions_per_update=16,
             )
@@ -54,17 +56,17 @@ class TestChip8Core:
             instructions_per_update = randint(1, 16)
 
             sut = Chip8Core(
-                bus=MagicMock(),
+                bus=MagicMock(spec_set=DeviceBus),
                 reserved_address=0,
-                display=MagicMock(),
-                keyboard=MagicMock(),
+                display=MagicMock(spec_set=Display),
+                keyboard=MagicMock(spec_set=Keyboard),
                 entrypoint=0x200,
                 instructions_per_update=instructions_per_update,
             )
 
             with (
-                patch.object(sut, '_execute_instruction') as mock_execute_instruction,
-                patch.object(sut, '_decrement_timer') as mock_decrement_time,
+                patch.object(sut, '_execute_instruction', spec_set=Callable) as mock_execute_instruction,
+                patch.object(sut, '_decrement_timer', spec_set=Callable) as mock_decrement_time,
             ):
                 for i in range(1, instructions_per_update * 3 + 1):
                     sut.tick()
@@ -76,33 +78,36 @@ class TestChip8Core:
         for _ in range(10):
             instructions_per_update = randint(1, 16)
 
-            tick_callback = MagicMock()
-            update_callback = MagicMock()
+            mock_tick_callback = MagicMock(spec_set=Callable)
+            mock_update_callback = MagicMock(spec_set=Callable)
 
             sut = Chip8Core(
-                bus=MagicMock(),
+                bus=MagicMock(spec_set=DeviceBus),
                 reserved_address=0,
-                display=MagicMock(),
-                keyboard=MagicMock(),
+                display=MagicMock(spec_set=Display),
+                keyboard=MagicMock(spec_set=Keyboard),
                 entrypoint=0x200,
                 instructions_per_update=instructions_per_update,
             )
-            sut.set_tick_callback(tick_callback)
-            sut.set_update_callback(update_callback)
+            sut.set_tick_callback(mock_tick_callback)
+            sut.set_update_callback(mock_update_callback)
 
-            with patch.object(sut, '_execute_instruction'), patch.object(sut, '_decrement_timer'):
+            with (
+                patch.object(sut, '_execute_instruction', spec_set=Callable),
+                patch.object(sut, '_decrement_timer', spec_set=Callable),
+            ):
                 for i in range(1, instructions_per_update * 3 + 1):
                     sut.tick()
 
-                    assert tick_callback.call_count == i
-                    assert update_callback.call_count == i // instructions_per_update
+                    assert mock_tick_callback.call_count == i
+                    assert mock_update_callback.call_count == i // instructions_per_update
 
     def test_decrement_timers_with_zero(self) -> None:
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=0,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -119,10 +124,10 @@ class TestChip8Core:
         timer = randint(5, 10)
 
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=0,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -138,10 +143,10 @@ class TestChip8Core:
         timer = randint(5, 10)
 
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=0,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -157,10 +162,10 @@ class TestChip8Core:
         timer = randint(5, 10)
 
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=0,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -175,10 +180,10 @@ class TestChip8Core:
 
     def test_instruction_sys(self) -> None:
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -186,17 +191,15 @@ class TestChip8Core:
         for _ in range(10):
             value = randint(0, 0xFFF)
 
-            with pytest.raises(NotImplementedError) as exc_info:
+            with pytest.raises(NotImplementedError, match=f'^Instruction {value:04x} not implemented$'):
                 sut._instruction_sys(value)
-
-            assert exc_info.value.args[0] == f'Instruction {value:04x} not implemented'
 
     def test_execute_instruction_sys(self, mock_bus: MockBus) -> None:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -212,7 +215,7 @@ class TestChip8Core:
             mock_bus.memory[address] = instruction >> 8
             mock_bus.memory[address + 1] = instruction & 0xFF
 
-            with patch.object(sut, '_instruction_sys') as mock_instruction:
+            with patch.object(sut, '_instruction_sys', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(instruction & 0xFFF)
@@ -220,10 +223,10 @@ class TestChip8Core:
 
     def test_instruction_jump(self) -> None:
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -239,8 +242,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -254,7 +257,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | (nnn >> 8)
             mock_bus.memory[address + 1] = nnn & 0xFF
 
-            with patch.object(sut, '_instruction_jump') as mock_instruction:
+            with patch.object(sut, '_instruction_jump', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(nnn)
@@ -262,10 +265,10 @@ class TestChip8Core:
 
     def test_instruction_jump_v0(self) -> None:
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -284,8 +287,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -299,7 +302,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | (nnn >> 8)
             mock_bus.memory[address + 1] = nnn & 0xFF
 
-            with patch.object(sut, '_instruction_jump_v0') as mock_instruction:
+            with patch.object(sut, '_instruction_jump_v0', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(nnn)
@@ -307,10 +310,10 @@ class TestChip8Core:
 
     def test_instruction_skip_eq_imediate(self) -> None:
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -338,8 +341,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -354,7 +357,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = nn
 
-            with patch.object(sut, '_instruction_skip_eq_imediate') as mock_instruction:
+            with patch.object(sut, '_instruction_skip_eq_imediate', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x, nn)
@@ -362,10 +365,10 @@ class TestChip8Core:
 
     def test_instruction_skip_eq_register(self) -> None:
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -396,8 +399,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -413,7 +416,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = (y << 4) | n
 
-            with patch.object(sut, '_instruction_skip_eq_register') as mock_instruction:
+            with patch.object(sut, '_instruction_skip_eq_register', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x, y)
@@ -421,10 +424,10 @@ class TestChip8Core:
 
     def test_instruction_skip_ne_imediate(self) -> None:
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -452,8 +455,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -468,7 +471,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = nn
 
-            with patch.object(sut, '_instruction_skip_ne_imediate') as mock_instruction:
+            with patch.object(sut, '_instruction_skip_ne_imediate', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x, nn)
@@ -476,10 +479,10 @@ class TestChip8Core:
 
     def test_instruction_skip_ne_register(self) -> None:
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -510,8 +513,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -527,7 +530,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = (y << 4) | n
 
-            with patch.object(sut, '_instruction_skip_ne_register') as mock_instruction:
+            with patch.object(sut, '_instruction_skip_ne_register', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x, y)
@@ -538,8 +541,8 @@ class TestChip8Core:
             sut = Chip8Core(
                 bus=mock_bus.bus,
                 reserved_address=352,
-                display=MagicMock(),
-                keyboard=MagicMock(),
+                display=MagicMock(spec_set=Display),
+                keyboard=MagicMock(spec_set=Keyboard),
                 entrypoint=0x200,
                 instructions_per_update=16,
             )
@@ -570,8 +573,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -585,7 +588,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | (nnn >> 8)
             mock_bus.memory[address + 1] = nnn & 0xFF
 
-            with patch.object(sut, '_instruction_call') as mock_instruction:
+            with patch.object(sut, '_instruction_call', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(nnn)
@@ -595,8 +598,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -609,7 +612,7 @@ class TestChip8Core:
             mock_bus.memory[address] = instruction >> 8
             mock_bus.memory[address + 1] = instruction & 0xFF
 
-            with patch.object(sut, '_instruction_rts') as mock_instruction:
+            with patch.object(sut, '_instruction_rts', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with()
@@ -623,8 +626,8 @@ class TestChip8Core:
             sut = Chip8Core(
                 bus=mock_bus.bus,
                 reserved_address=352,
-                display=MagicMock(),
-                keyboard=MagicMock(),
+                display=MagicMock(spec_set=Display),
+                keyboard=MagicMock(spec_set=Keyboard),
                 entrypoint=0x200,
                 instructions_per_update=16,
             )
@@ -642,8 +645,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -658,7 +661,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = nn
 
-            with patch.object(sut, '_instruction_movm_to_i') as mock_instruction:
+            with patch.object(sut, '_instruction_movm_to_i', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x)
@@ -674,8 +677,8 @@ class TestChip8Core:
             sut = Chip8Core(
                 bus=mock_bus.bus,
                 reserved_address=352,
-                display=MagicMock(),
-                keyboard=MagicMock(),
+                display=MagicMock(spec_set=Display),
+                keyboard=MagicMock(spec_set=Keyboard),
                 entrypoint=0x200,
                 instructions_per_update=16,
             )
@@ -691,8 +694,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -707,7 +710,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = nn
 
-            with patch.object(sut, '_instruction_movm_from_i') as mock_instruction:
+            with patch.object(sut, '_instruction_movm_from_i', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x)
@@ -718,10 +721,10 @@ class TestChip8Core:
             values = [randint(0, 255) for _ in range(16)]
 
             sut = Chip8Core(
-                bus=MagicMock(),
+                bus=MagicMock(spec_set=DeviceBus),
                 reserved_address=352,
-                display=MagicMock(),
-                keyboard=MagicMock(),
+                display=MagicMock(spec_set=Display),
+                keyboard=MagicMock(spec_set=Keyboard),
                 entrypoint=0x200,
                 instructions_per_update=16,
             )
@@ -736,8 +739,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -752,7 +755,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = nn
 
-            with patch.object(sut, '_instruction_mov_imediate') as mock_instruction:
+            with patch.object(sut, '_instruction_mov_imediate', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x, nn)
@@ -760,10 +763,10 @@ class TestChip8Core:
 
     def test_instruction_mov_register(self) -> None:
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -782,8 +785,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -799,7 +802,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = (y << 4) | n
 
-            with patch.object(sut, '_instruction_mov_register') as mock_instruction:
+            with patch.object(sut, '_instruction_mov_register', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x, y)
@@ -807,10 +810,10 @@ class TestChip8Core:
 
     def test_instruction_and(self) -> None:
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -831,8 +834,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -848,7 +851,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = (y << 4) | n
 
-            with patch.object(sut, '_instruction_and') as mock_instruction:
+            with patch.object(sut, '_instruction_and', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x, y)
@@ -856,10 +859,10 @@ class TestChip8Core:
 
     def test_instruction_or(self) -> None:
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -880,8 +883,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -897,7 +900,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = (y << 4) | n
 
-            with patch.object(sut, '_instruction_or') as mock_instruction:
+            with patch.object(sut, '_instruction_or', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x, y)
@@ -905,10 +908,10 @@ class TestChip8Core:
 
     def test_instruction_xor(self) -> None:
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -929,8 +932,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -946,7 +949,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = (y << 4) | n
 
-            with patch.object(sut, '_instruction_xor') as mock_instruction:
+            with patch.object(sut, '_instruction_xor', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x, y)
@@ -956,10 +959,10 @@ class TestChip8Core:
         values = [randint(0, 255) for _ in range(16)]
 
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -976,8 +979,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -992,7 +995,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = nn
 
-            with patch.object(sut, '_instruction_add_imediate') as mock_instruction:
+            with patch.object(sut, '_instruction_add_imediate', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x, nn)
@@ -1000,10 +1003,10 @@ class TestChip8Core:
 
     def test_instruction_add_register(self) -> None:
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1026,8 +1029,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1043,7 +1046,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = (y << 4) | n
 
-            with patch.object(sut, '_instruction_add_register') as mock_instruction:
+            with patch.object(sut, '_instruction_add_register', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x, y)
@@ -1051,10 +1054,10 @@ class TestChip8Core:
 
     def test_instruction_sub(self) -> None:
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1076,8 +1079,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1093,7 +1096,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = (y << 4) | n
 
-            with patch.object(sut, '_instruction_sub') as mock_instruction:
+            with patch.object(sut, '_instruction_sub', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x, y)
@@ -1101,10 +1104,10 @@ class TestChip8Core:
 
     def test_instruction_subb(self) -> None:
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1126,8 +1129,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1143,7 +1146,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = (y << 4) | n
 
-            with patch.object(sut, '_instruction_subb') as mock_instruction:
+            with patch.object(sut, '_instruction_subb', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x, y)
@@ -1151,10 +1154,10 @@ class TestChip8Core:
 
     def test_instruction_shr(self) -> None:
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1174,8 +1177,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1191,7 +1194,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = (y << 4) | n
 
-            with patch.object(sut, '_instruction_shr') as mock_instruction:
+            with patch.object(sut, '_instruction_shr', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x, y)
@@ -1199,10 +1202,10 @@ class TestChip8Core:
 
     def test_instruction_shl(self) -> None:
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1222,8 +1225,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1239,34 +1242,34 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = (y << 4) | n
 
-            with patch.object(sut, '_instruction_shl') as mock_instruction:
+            with patch.object(sut, '_instruction_shl', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x, y)
                 assert sut._pc == address + 2
 
     def test_instruction_cls(self) -> None:
-        display = MagicMock()
+        mock_display = MagicMock(spec_set=Display)
 
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=352,
-            display=display,
-            keyboard=MagicMock(),
+            display=mock_display,
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
 
         sut._instruction_cls()
 
-        display.clear.assert_called_once_with()
+        mock_display.clear.assert_called_once_with()
 
     def test_execute_instruction_cls(self, mock_bus: MockBus) -> None:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1279,7 +1282,7 @@ class TestChip8Core:
             mock_bus.memory[address] = instruction >> 8
             mock_bus.memory[address + 1] = instruction & 0xFF
 
-            with patch.object(sut, '_instruction_cls') as mock_instruction:
+            with patch.object(sut, '_instruction_cls', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with()
@@ -1298,14 +1301,14 @@ class TestChip8Core:
                 mock_bus.memory[address + i] = value
             flipped = choice([True, False])
 
-            mock_display = MagicMock()
+            mock_display = MagicMock(spec_set=Display)
             mock_display.draw_sprite.return_value = flipped
 
             sut = Chip8Core(
                 bus=mock_bus.bus,
                 reserved_address=352,
                 display=mock_display,
-                keyboard=MagicMock(),
+                keyboard=MagicMock(spec_set=Keyboard),
                 entrypoint=0x200,
                 instructions_per_update=16,
             )
@@ -1322,8 +1325,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1339,7 +1342,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = (y << 4) | n
 
-            with patch.object(sut, '_instruction_sprite') as mock_instruction:
+            with patch.object(sut, '_instruction_sprite', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x, y, n)
@@ -1348,10 +1351,10 @@ class TestChip8Core:
     @pytest.mark.parametrize('i', range(16))
     def test_instruction_spritechar(self, i: int) -> None:
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1369,8 +1372,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1385,7 +1388,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = nn
 
-            with patch.object(sut, '_instruction_spritechar') as mock_instruction:
+            with patch.object(sut, '_instruction_spritechar', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x)
@@ -1393,10 +1396,10 @@ class TestChip8Core:
 
     def test_instruction_mov_to_i(self) -> None:
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1412,8 +1415,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1427,7 +1430,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | (nnn >> 8)
             mock_bus.memory[address + 1] = nnn & 0xFF
 
-            with patch.object(sut, '_instruction_mov_to_i') as mock_instruction:
+            with patch.object(sut, '_instruction_mov_to_i', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(nnn)
@@ -1435,10 +1438,10 @@ class TestChip8Core:
 
     def test_instruction_add_to_i(self) -> None:
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1459,8 +1462,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1475,7 +1478,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = nn
 
-            with patch.object(sut, '_instruction_add_to_i') as mock_instruction:
+            with patch.object(sut, '_instruction_add_to_i', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x)
@@ -1487,26 +1490,26 @@ class TestChip8Core:
             address = randint(0, 0xF00)
             x = randint(0, 15)
 
-            keyboard = MagicMock()
+            mock_keyboard = MagicMock(spec_set=Keyboard)
 
             sut = Chip8Core(
-                bus=MagicMock(),
+                bus=MagicMock(spec_set=DeviceBus),
                 reserved_address=352,
-                display=MagicMock(),
-                keyboard=keyboard,
+                display=MagicMock(spec_set=Display),
+                keyboard=mock_keyboard,
                 entrypoint=0x200,
                 instructions_per_update=16,
             )
             sut._v[x] = int(key)
 
-            keyboard.__getitem__.return_value = False
+            mock_keyboard.__getitem__.return_value = False
             sut._pc = address
 
             sut._instruction_skip_key(x)
 
             assert sut._pc == address
 
-            keyboard.__getitem__.return_value = True
+            mock_keyboard.__getitem__.return_value = True
             sut._pc = address
 
             sut._instruction_skip_key(x)
@@ -1517,8 +1520,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1533,7 +1536,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = nn
 
-            with patch.object(sut, '_instruction_skip_key') as mock_instruction:
+            with patch.object(sut, '_instruction_skip_key', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x)
@@ -1545,26 +1548,26 @@ class TestChip8Core:
             address = randint(0, 0xF00)
             x = randint(0, 15)
 
-            keyboard = MagicMock()
+            mock_keyboard = MagicMock(spec_set=Keyboard)
 
             sut = Chip8Core(
-                bus=MagicMock(),
+                bus=MagicMock(spec_set=DeviceBus),
                 reserved_address=352,
-                display=MagicMock(),
-                keyboard=keyboard,
+                display=MagicMock(spec_set=Display),
+                keyboard=mock_keyboard,
                 entrypoint=0x200,
                 instructions_per_update=16,
             )
             sut._v[x] = int(key)
 
-            keyboard.__getitem__.return_value = True
+            mock_keyboard.__getitem__.return_value = True
             sut._pc = address
 
             sut._instruction_skip_nokey(x)
 
             assert sut._pc == address
 
-            keyboard.__getitem__.return_value = False
+            mock_keyboard.__getitem__.return_value = False
             sut._pc = address
 
             sut._instruction_skip_nokey(x)
@@ -1575,8 +1578,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1591,7 +1594,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = nn
 
-            with patch.object(sut, '_instruction_skip_nokey') as mock_instruction:
+            with patch.object(sut, '_instruction_skip_nokey', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x)
@@ -1604,14 +1607,14 @@ class TestChip8Core:
             x = randint(0, 15)
             future: Future[Key] = Future()
 
-            keyboard = MagicMock()
-            keyboard.next_key_pressed.return_value = future
+            mock_keyboard = MagicMock(spec_set=Keyboard)
+            mock_keyboard.next_key_pressed.return_value = future
 
             sut = Chip8Core(
-                bus=MagicMock(),
+                bus=MagicMock(spec_set=DeviceBus),
                 reserved_address=352,
-                display=MagicMock(),
-                keyboard=keyboard,
+                display=MagicMock(spec_set=Display),
+                keyboard=mock_keyboard,
                 entrypoint=0x200,
                 instructions_per_update=16,
             )
@@ -1635,8 +1638,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1651,7 +1654,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = nn
 
-            with patch.object(sut, '_instruction_wait_key') as mock_instruction:
+            with patch.object(sut, '_instruction_wait_key', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x)
@@ -1660,10 +1663,10 @@ class TestChip8Core:
     @pytest.mark.parametrize('x', range(16))
     def test_instruction_mov_from_delay(self, x: int) -> None:
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1681,8 +1684,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1697,7 +1700,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = nn
 
-            with patch.object(sut, '_instruction_mov_from_delay') as mock_instruction:
+            with patch.object(sut, '_instruction_mov_from_delay', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x)
@@ -1706,10 +1709,10 @@ class TestChip8Core:
     @pytest.mark.parametrize('x', range(16))
     def test_instruction_mov_to_delay(self, x: int) -> None:
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1727,8 +1730,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1743,7 +1746,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = nn
 
-            with patch.object(sut, '_instruction_mov_to_delay') as mock_instruction:
+            with patch.object(sut, '_instruction_mov_to_delay', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x)
@@ -1752,10 +1755,10 @@ class TestChip8Core:
     @pytest.mark.parametrize('x', range(16))
     def test_instruction_mov_to_sound(self, x: int) -> None:
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1773,8 +1776,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1789,7 +1792,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = nn
 
-            with patch.object(sut, '_instruction_mov_to_sound') as mock_instruction:
+            with patch.object(sut, '_instruction_mov_to_sound', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x)
@@ -1798,10 +1801,10 @@ class TestChip8Core:
     @pytest.mark.parametrize('x', range(16))
     def test_instruction_rnd(self, x: int) -> None:
         sut = Chip8Core(
-            bus=MagicMock(),
+            bus=MagicMock(spec_set=DeviceBus),
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1810,7 +1813,7 @@ class TestChip8Core:
             value = randint(0, 255)
             nn = randint(0, 255)
 
-            with patch('pychip8.core.randbits') as mock_randbits:
+            with patch('pychip8.core.randbits', spec_set=Callable) as mock_randbits:
                 mock_randbits.return_value = value
 
                 sut._instruction_rnd(x, nn)
@@ -1822,8 +1825,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1838,7 +1841,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = nn
 
-            with patch.object(sut, '_instruction_rnd') as mock_instruction:
+            with patch.object(sut, '_instruction_rnd', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x, nn)
@@ -1849,8 +1852,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1872,8 +1875,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1888,7 +1891,7 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = nn
 
-            with patch.object(sut, '_instruction_movbcd') as mock_instruction:
+            with patch.object(sut, '_instruction_movbcd', spec_set=Callable) as mock_instruction:
                 sut._execute_instruction()
 
                 mock_instruction.assert_called_once_with(x)
@@ -1898,8 +1901,8 @@ class TestChip8Core:
         sut = Chip8Core(
             bus=mock_bus.bus,
             reserved_address=352,
-            display=MagicMock(),
-            keyboard=MagicMock(),
+            display=MagicMock(spec_set=Display),
+            keyboard=MagicMock(spec_set=Keyboard),
             entrypoint=0x200,
             instructions_per_update=16,
         )
@@ -1914,7 +1917,5 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = nn
 
-            with pytest.raises(RuntimeError) as exc_info:
+            with pytest.raises(RuntimeError, match='^Undefined instruction$'):
                 sut._execute_instruction()
-
-            assert exc_info.value.args[0] == 'Undefined instruction'

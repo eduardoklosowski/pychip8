@@ -57,7 +57,7 @@ class TestDeviceBus:
     def test_read_address_without_devices(self) -> None:
         sut = DeviceBus()
 
-        with pytest.raises(RuntimeError, match='^Device not found for this address$'):
+        with pytest.raises(RuntimeError, match=r'^Device not found for this address$'):
             sut[randint(0, 1024)]
 
     def test_read_address(self) -> None:
@@ -100,16 +100,16 @@ class TestDeviceBus:
             sut = DeviceBus()
             sut.map(address, mock_device)
 
-            with pytest.raises(RuntimeError, match='^Device not found for this address$'):
+            with pytest.raises(RuntimeError, match=r'^Device not found for this address$'):
                 sut[randint(0, address - 1)]
 
-            with pytest.raises(RuntimeError, match='^Device not found for this address$'):
+            with pytest.raises(RuntimeError, match=r'^Device not found for this address$'):
                 sut[randint(address + size, (address + size) * 2)]
 
     def test_write_address_without_devices(self) -> None:
         sut = DeviceBus()
 
-        with pytest.raises(RuntimeError, match='^Device not found for this address$'):
+        with pytest.raises(RuntimeError, match=r'^Device not found for this address$'):
             sut[randint(0, 1024)] = 0
 
     def test_write_address(self) -> None:
@@ -151,10 +151,10 @@ class TestDeviceBus:
             sut = DeviceBus()
             sut.map(address, mock_device)
 
-            with pytest.raises(RuntimeError, match='^Device not found for this address$'):
+            with pytest.raises(RuntimeError, match=r'^Device not found for this address$'):
                 sut[randint(0, address - 1)] = 0
 
-            with pytest.raises(RuntimeError, match='^Device not found for this address$'):
+            with pytest.raises(RuntimeError, match=r'^Device not found for this address$'):
                 sut[randint(address + size, (address + size) * 2)] = 0
 
     def test_load_program(self) -> None:
@@ -198,7 +198,7 @@ class TestDeviceBus:
 
             sut.unmap_device(mock_device)
 
-            with pytest.raises(RuntimeError, match='^Device not found for this address$'):
+            with pytest.raises(RuntimeError, match=r'^Device not found for this address$'):
                 sut[address]
 
     def test_unmap_with_multiple_devices(self) -> None:
@@ -227,7 +227,7 @@ class TestDeviceBus:
             sut.unmap_device(mock_device2)
 
             sut[address1]
-            with pytest.raises(RuntimeError, match='^Device not found for this address$'):
+            with pytest.raises(RuntimeError, match=r'^Device not found for this address$'):
                 sut[address2]
 
     def test_unmap_without_address_mapped(self) -> None:
@@ -253,7 +253,7 @@ class TestDeviceBus:
 
             sut.unmap_address(start)
 
-            with pytest.raises(RuntimeError, match='^Device not found for this address$'):
+            with pytest.raises(RuntimeError, match=r'^Device not found for this address$'):
                 sut[address]
 
     def test_unmap_with_multiple_addresses(self) -> None:
@@ -282,5 +282,5 @@ class TestDeviceBus:
             sut.unmap_address(start2)
 
             sut[address1]
-            with pytest.raises(RuntimeError, match='^Device not found for this address$'):
+            with pytest.raises(RuntimeError, match=r'^Device not found for this address$'):
                 sut[address2]

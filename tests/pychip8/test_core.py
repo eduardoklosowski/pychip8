@@ -1,4 +1,3 @@
-from asyncio import Future
 from collections.abc import Callable
 from dataclasses import dataclass
 from random import choice, randint
@@ -9,7 +8,7 @@ import pytest
 from pychip8.core import Chip8Core
 from pychip8.devices.devicebus import DeviceBus
 from pychip8.devices.display import Display
-from pychip8.devices.keyboard import Key, Keyboard
+from pychip8.devices.keyboard import Future, Key, Keyboard
 
 
 @dataclass

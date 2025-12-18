@@ -1,8 +1,59 @@
-from random import choices
+from asyncio import CancelledError, InvalidStateError
+from random import choices, randint
 
 import pytest
 
-from pychip8.devices.keyboard import Key, Keyboard
+from pychip8.devices.keyboard import Future, Key, Keyboard
+
+
+class TestFuture:
+    def test_done(self) -> None:
+        sut = Future[int]()
+        for _ in range(randint(2, 5)):
+            assert sut.done() is False
+        sut.set_result(randint(0, 9))
+        for _ in range(randint(2, 5)):
+            assert sut.done() is True
+
+    def test_cancel(self) -> None:
+        sut = Future[int]()
+        for _ in range(randint(2, 5)):
+            assert sut.cancelled() is False
+        assert sut.cancel() is True
+        assert sut.cancelled() is True
+        for _ in range(randint(2, 5)):
+            assert sut.cancel() is False
+            assert sut.cancelled() is True
+
+    def test_set_result_twice(self) -> None:
+        sut = Future[int]()
+        sut.set_result(randint(0, 9))
+        with pytest.raises(InvalidStateError):
+            sut.set_result(randint(0, 9))
+
+    def test_set_result_after_cancelled(self) -> None:
+        sut = Future[int]()
+        sut.cancel()
+        with pytest.raises(InvalidStateError):
+            sut.set_result(randint(0, 9))
+
+    def test_result_when_done(self) -> None:
+        result = randint(0, 9)
+
+        sut = Future[int]()
+        sut.set_result(result)
+        assert sut.result() == result
+
+    def test_result_before_done(self) -> None:
+        sut = Future[int]()
+        with pytest.raises(InvalidStateError):
+            sut.result()
+
+    def test_result_when_cancelled(self) -> None:
+        sut = Future[int]()
+        sut.cancel()
+        with pytest.raises(CancelledError):
+            sut.result()
 
 
 class TestKey:

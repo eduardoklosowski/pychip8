@@ -1,13 +1,9 @@
 from collections.abc import Callable
 from secrets import randbits
-from typing import TYPE_CHECKING
 
 from .devices.devicebus import DeviceBus
 from .devices.display import Display
-from .devices.keyboard import Key, Keyboard
-
-if TYPE_CHECKING:
-    from asyncio import Future
+from .devices.keyboard import Future, Key, Keyboard
 
 
 class Chip8Core:

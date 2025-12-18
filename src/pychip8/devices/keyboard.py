@@ -1,5 +1,38 @@
-from asyncio import Future
+from asyncio import CancelledError, InvalidStateError
 from enum import IntEnum, auto
+from typing import Generic, TypeVar
+
+T = TypeVar('T')
+
+
+class Future(Generic[T]):
+    def __init__(self) -> None:
+        self._result: T | None = None
+        self._cancelled = False
+
+    def done(self) -> bool:
+        return self._result is not None
+
+    def cancel(self) -> bool:
+        if not self._cancelled and self._result is None:
+            self._cancelled = True
+            return True
+        return False
+
+    def cancelled(self) -> bool:
+        return self._cancelled
+
+    def set_result(self, result: T) -> None:
+        if self._cancelled or self._result is not None:
+            raise InvalidStateError
+        self._result = result
+
+    def result(self) -> T:
+        if self._cancelled:
+            raise CancelledError
+        if self._result is None:
+            raise InvalidStateError
+        return self._result
 
 
 class Key(IntEnum):

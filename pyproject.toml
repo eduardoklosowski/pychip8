@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "pychip8"
-version = "0.0.0"
+version = "0.3.0"
 description = "Chip-8 emulator written in Python"
 authors = [
     {name = "Eduardo Klosowski", email = "eduardo_klosowski@yahoo.com"},

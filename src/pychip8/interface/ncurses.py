@@ -12,7 +12,7 @@ from pychip8.devices.keyboard import Key
 
 
 @contextmanager
-def ncurses_environment() -> Iterator['curses._CursesWindow']:
+def ncurses_environment() -> Iterator['curses.window']:
     stdscr = None
     try:
         stdscr = curses.initscr()
@@ -54,7 +54,7 @@ class Window:
     }
     CLOSE_KEY: Final = '\x1b'
 
-    def __init__(self, *, cpu: Chip8, scr: 'curses._CursesWindow') -> None:
+    def __init__(self, *, cpu: Chip8, scr: 'curses.window') -> None:
         self._cpu = cpu
         self._display = cpu.display
         self._keyboard = cpu.keyboard

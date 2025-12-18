@@ -81,7 +81,7 @@ class TestChip8:
             cores = [MagicMock(spec_set=Chip8Core) for _ in range(i)]
 
             sut = Chip8(
-                cores=cast(list[Chip8Core], cores),
+                cores=cast('list[Chip8Core]', cores),
                 bus=MagicMock(spec_set=DeviceBus),
                 display=MagicMock(spec_set=Display),
                 keyboard=MagicMock(spec_set=Keyboard),
@@ -103,7 +103,7 @@ class TestChip8:
             update_callback = MagicMock(spec_set=Callable)
 
             sut = Chip8(
-                cores=cast(list[Chip8Core], cores),
+                cores=cast('list[Chip8Core]', cores),
                 bus=MagicMock(spec_set=DeviceBus),
                 display=MagicMock(spec_set=Display),
                 keyboard=MagicMock(spec_set=Keyboard),

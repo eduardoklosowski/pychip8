@@ -1917,5 +1917,5 @@ class TestChip8Core:
             mock_bus.memory[address] = (op << 4) | x
             mock_bus.memory[address + 1] = nn
 
-            with pytest.raises(RuntimeError, match='^Undefined instruction$'):
+            with pytest.raises(RuntimeError, match=r'^Undefined instruction$'):
                 sut._execute_instruction()

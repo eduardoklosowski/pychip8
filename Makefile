@@ -1,7 +1,8 @@
 # Project
 
-srcdir = src
-testsdir = tests
+SRC_DIR := src
+TESTS_DIR := tests
+VENV_DIR := .venv
 
 
 # Build
@@ -17,7 +18,7 @@ build:
 .PHONY: init
 
 init:
-	poetry install --sync
+	poetry sync
 
 
 # Format
@@ -25,8 +26,8 @@ init:
 .PHONY: fmt
 
 fmt:
-	poetry run ruff check --select I001 --fix $(srcdir) $(testsdir)
-	poetry run ruff format $(srcdir) $(testsdir)
+	poetry run ruff check --select I001 --fix $(SRC_DIR) $(TESTS_DIR)
+	poetry run ruff format $(SRC_DIR) $(TESTS_DIR)
 
 
 # Lint
@@ -39,23 +40,26 @@ lint-poetry:
 	poetry check --lock
 
 lint-ruff-format:
-	poetry run ruff format --diff $(srcdir) $(testsdir)
+	poetry run ruff format --diff $(SRC_DIR) $(TESTS_DIR)
 
 lint-ruff-check:
-	poetry run ruff check $(srcdir) $(testsdir)
+	poetry run ruff check $(SRC_DIR) $(TESTS_DIR)
 
 lint-mypy:
-	poetry run mypy --show-error-context --pretty $(srcdir) $(testsdir)
+	poetry run mypy --show-error-context --pretty $(SRC_DIR) $(TESTS_DIR)
 
 
 # Tests
 
-.PHONY: test test-pytest
+.PHONY: test test-pytest test-coverage-report
 
 test: test-pytest
 
-test-pytest:
-	poetry run pytest --cov=pychip8 --cov-report=term-missing --no-cov-on-fail $(testsdir)
+test-pytest .coverage:
+	poetry run pytest --cov=pychip8 --cov-report=term-missing --no-cov-on-fail $(TESTS_DIR)
+
+test-coverage-report: .coverage
+	poetry run coverage html
 
 
 # Clean
@@ -65,14 +69,14 @@ test-pytest:
 clean: clean-build clean-pycache clean-python-tools
 
 clean-build:
-	rm -rf dist
+	rm -rf build dist $(SRC_DIR)/*.egg-info
 
 clean-pycache:
-	find $(srcdir) $(testsdir) -name '__pycache__' -exec rm -rf {} +
-	find $(srcdir) $(testsdir) -type d -empty -delete
+	find $(SRC_DIR) $(TESTS_DIR) -name '__pycache__' -exec rm -rf {} +
+	find $(SRC_DIR) $(TESTS_DIR) -type d -empty -delete
 
 clean-python-tools:
-	rm -rf dist .ruff_cache .mypy_cache .pytest_cache .coverage .coverage.*
+	rm -rf .ruff_cache .mypy_cache .pytest_cache .coverage .coverage.* htmlcov
 
 dist-clean: clean
-	rm -rf .venv
+	rm -rf $(VENV_DIR)

@@ -15,24 +15,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup poetry
-        run: pipx install poetry==1.8.3 && pipx inject poetry poetry-dynamic-versioning[plugin]==1.4.1
+        run: pipx install poetry==2.2.1
 
       - name: Setup python
         id: setup-python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
           cache: poetry
 
       - name: Install dependencies
         if: steps.setup-python.outputs.cache-hit != 'true'
-        run: poetry install --sync
+        run: poetry sync
 
       - name: Run lints
         run: make lint
@@ -43,24 +43,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup poetry
-        run: pipx install poetry==1.8.3 && pipx inject poetry poetry-dynamic-versioning[plugin]==1.4.1
+        run: pipx install poetry==2.2.1
 
       - name: Setup python
         id: setup-python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
           cache: poetry
 
       - name: Install dependencies
         if: steps.setup-python.outputs.cache-hit != 'true'
-        run: poetry install --sync
+        run: poetry sync
 
       - name: Run tests
         run: make test
